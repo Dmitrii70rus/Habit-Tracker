@@ -41,18 +41,20 @@ struct HabitDetailView: View {
                 .padding(.vertical, 6)
             }
 
-            Section("Choose Date") {
+            Section {
                 DateStripView(
                     dates: dateRange,
                     selectedDate: $selectedDate,
                     habit: habit
                 )
                 .padding(.vertical, 4)
+            } header: {
+                Text("Choose Date")
             } footer: {
                 Text("Review the last 7 days, today, and the next 7 days.")
             }
 
-            Section("Selected Day") {
+            Section {
                 HabitDayStatusCard(
                     selectedDate: selectedDate,
                     status: selectedStatus
@@ -75,6 +77,8 @@ struct HabitDetailView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
+            } header: {
+                Text("Selected Day")
             } footer: {
                 Text(isFutureSelection ? "Future dates can be planned only. Plans do not increase streaks." : "Past and current dates can be marked complete or not complete.")
             }
