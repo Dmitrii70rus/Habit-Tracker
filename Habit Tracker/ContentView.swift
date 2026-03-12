@@ -33,17 +33,8 @@ struct ContentView: View {
 
     private var selectedDateTitle: String {
         if calendar.isDateInToday(selectedDate) { return "Today" }
-
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now),
-           calendar.isDate(selectedDate, inSameDayAs: yesterday) {
-            return "Yesterday"
-        }
-
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now),
-           calendar.isDate(selectedDate, inSameDayAs: tomorrow) {
-            return "Tomorrow"
-        }
-
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now), calendar.isDate(selectedDate, inSameDayAs: tomorrow) { return "Tomorrow" }
         return selectedDate.formatted(.dateTime.weekday(.wide).month().day())
     }
 
@@ -51,9 +42,7 @@ struct ContentView: View {
         NavigationStack {
             Group {
                 if habits.isEmpty {
-                    EmptyHabitStateView {
-                        viewModel.openAddHabitSheet(for: selectedDate)
-                    }
+                    EmptyHabitStateView { viewModel.openAddHabitSheet(for: selectedDate) }
                 } else {
                     List {
                         Section {
@@ -95,14 +84,8 @@ struct ContentView: View {
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-
-                                    Button { viewModel.openEditHabitSheet(for: habit) } label: {
-                                        Label("Edit", systemImage: "pencil")
-                                    }
-                                    .tint(.blue)
+                                    Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: { Label("Delete", systemImage: "trash") }
+                                    Button { viewModel.openEditHabitSheet(for: habit) } label: { Label("Edit", systemImage: "pencil") }.tint(.blue)
                                 }
                             }
                         }
@@ -389,76 +372,49 @@ private struct MainDateCellView: View {
                 }
             }
         }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct ProgressSummaryCardView: View {
-    let selectedDateTitle: String
-    let completedCount: Int
-    let plannedCount: Int
-    let totalCount: Int
-    let progressRatio: Double
-    let isFutureDate: Bool
-
-    private var percentageText: String { "\(Int(progressRatio * 100))%" }
-    private var titleText: String { isFutureDate ? "\(plannedCount) planned" : "\(completedCount) of \(totalCount) completed" }
-
-    private var motivationalText: String {
-        if isFutureDate {
-            return plannedCount == 0 ? "Plan one small win ahead." : "Nice planning. Stay consistent."
+        .sheet(isPresented: $viewModel.isShowingAddSheet) {
+            AddHabitView(
+                title: "Add Habit",
+                saveButtonTitle: "Save",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: $viewModel.selectedStartOption,
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: isFutureSelection,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onSave: { viewModel.saveNewHabit(in: modelContext) },
+                onCancel: { viewModel.closeAddHabitSheet() }
+            )
+            .presentationDetents([.fraction(0.42)])
         }
-
-        return completedCount == totalCount ? "Great job. Keep your streak alive." : "Small steps every day."
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(selectedDateTitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text(titleText)
-                .font(.title3.weight(.semibold))
-
-            ProgressView(value: progressRatio)
-                .tint(isFutureDate ? .blue : .green)
-
-            Text("\(percentageText) • \(motivationalText)")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        .sheet(isPresented: $viewModel.isShowingEditSheet) {
+            AddHabitView(
+                title: "Edit Habit",
+                saveButtonTitle: "Update",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: .constant(.startToday),
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: false,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onSave: { viewModel.saveEditedHabit(in: modelContext) },
+                onCancel: { viewModel.closeEditHabitSheet() }
+            )
+            .presentationDetents([.fraction(0.3)])
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-    }
-}
-
-private struct EmptyHabitStateView: View {
-    let onAddHabit: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checklist.checked")
-                .font(.system(size: 44))
-                .foregroundStyle(.tint)
-
-            Text("No Habits Yet")
-                .font(.title3.weight(.semibold))
-
-            Text("Create your first habit to start building consistency.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button(action: onAddHabit) {
-                Label("Create Your First Habit", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 8)
+        .confirmationDialog(
+            "Delete habit?",
+            isPresented: Binding(get: { viewModel.habitPendingDelete != nil }, set: { if !$0 { viewModel.cancelDeleteHabitRequest() } }),
+            presenting: viewModel.habitPendingDelete
+        ) { _ in
+            Button("Delete Habit", role: .destructive) { viewModel.confirmDeleteHabit(in: modelContext) }
+            Button("Cancel", role: .cancel) { viewModel.cancelDeleteHabitRequest() }
+        } message: { _ in
+            Text("This action cannot be undone.")
+        }
+        .onAppear { viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext) }
+        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
         .padding(24)
         .frame(maxWidth: 420)
