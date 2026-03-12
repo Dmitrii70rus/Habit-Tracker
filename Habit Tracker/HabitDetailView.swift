@@ -35,14 +35,21 @@ struct HabitDetailView: View {
                 .padding(.vertical, 6)
             }
 
-            Section("Recent History") {
+            Section {
                 if habit.completionDates.isEmpty {
-                    ContentUnavailableView(
-                        "No history yet",
-                        systemImage: "clock.badge.questionmark",
-                        description: Text("Complete this habit to start building a streak.")
-                    )
+                    VStack(spacing: 8) {
+                        Image(systemName: "clock.badge.questionmark")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                        Text("No history yet")
+                            .font(.headline)
+                        Text("Complete this habit to start building a streak.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                 } else {
                     HabitHistoryStripView(
                         recentDays: recentDays,
@@ -54,6 +61,8 @@ struct HabitDetailView: View {
                     )
                     .padding(.vertical, 4)
                 }
+            } header: {
+                Text("Recent History")
             } footer: {
                 Text("Tap a day to toggle completion for the last 7 days.")
             }
