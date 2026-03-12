@@ -11,11 +11,12 @@ struct MainDateStripView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(dates, id: \.self) { date in
+                    let activeHabitsForDate = habits.filter { $0.isActive(on: date) }
                     MainDateCellView(
                         date: date,
                         isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                        hasCompleted: habits.contains(where: { $0.isCompleted(on: date) }),
-                        hasPlanned: habits.contains(where: { $0.isPlanned(on: date) }),
+                        hasCompleted: activeHabitsForDate.contains(where: { $0.isCompleted(on: date) }),
+                        hasPlanned: activeHabitsForDate.contains(where: { $0.isPlanned(on: date) }),
                         isFuture: calendar.compare(date, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending,
                         onTap: {
                             selectedDate = calendar.startOfDay(for: date)

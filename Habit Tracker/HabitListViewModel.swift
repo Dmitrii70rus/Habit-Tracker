@@ -52,9 +52,18 @@ final class HabitListViewModel: ObservableObject {
             return
         }
 
+        let today = Calendar.current.startOfDay(for: .now)
+        let startDate: Date
+        if selectedStartOption == .planForSelectedDate,
+           isFutureDate(selectedDateForNewHabit) {
+            startDate = selectedDateForNewHabit
+        } else {
+            startDate = today
+        }
+
         let accentOptions = ["mint", "blue", "purple", "orange", "pink", "teal"]
         let accent = accentOptions[Int.random(in: 0..<accentOptions.count)]
-        let habit = Habit(title: trimmedTitle, colorName: accent)
+        let habit = Habit(title: trimmedTitle, startDate: startDate, colorName: accent)
 
         if selectedStartOption == .planForSelectedDate,
            isFutureDate(selectedDateForNewHabit) {

@@ -21,6 +21,10 @@ struct HabitDetailView: View {
         calendar.compare(selectedDate, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
     }
 
+    private var isNotActiveSelection: Bool {
+        !habit.isActive(on: selectedDate)
+    }
+
     private var selectedStatus: Habit.DayStatus {
         habit.dayStatus(on: selectedDate)
     }
@@ -33,7 +37,6 @@ struct HabitDetailView: View {
     }
 
     var body: some View {
-
         List {
             Section {
                 VStack(alignment: .leading, spacing: 10) {
@@ -46,6 +49,10 @@ struct HabitDetailView: View {
                     }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+
+                    Text("Starts: \(habit.effectiveStartDate().formatted(.dateTime.weekday(.wide).month().day()))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)
             }
@@ -66,10 +73,15 @@ struct HabitDetailView: View {
             Section {
                 HabitDayStatusCard(
                     selectedDate: selectedDate,
-                    status: selectedStatus
+                    status: selectedStatus,
+                    habitStartDate: habit.effectiveStartDate()
                 )
 
-                if isFutureSelection {
+                if isNotActiveSelection {
+                    Text("This habit starts on \(habit.effectiveStartDate().formatted(.dateTime.month().day())).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else if isFutureSelection {
                     Button {
                         let newState = !habit.isPlanned(on: selectedDate)
                         viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: newState, in: modelContext)
@@ -89,7 +101,11 @@ struct HabitDetailView: View {
             } header: {
                 Text("Selected Day")
             } footer: {
-                Text(isFutureSelection ? "Future dates can be planned only. Plans do not increase streaks." : "Past and current dates can be marked complete or not complete.")
+                if isNotActiveSelection {
+                    Text("Actions are disabled before the habit start date.")
+                } else {
+                    Text(isFutureSelection ? "Future dates can be planned only. Plans do not increase streaks." : "Past and current dates can be marked complete or not complete.")
+                }
             }
 
             if habit.completionDates.isEmpty && !habit.hasAnyPlannedDates {
@@ -210,6 +226,7 @@ private struct DateCellView: View {
 
     private var statusIcon: String {
         switch status {
+        case .notActive: return "slash.circle"
         case .completed: return "checkmark.circle.fill"
         case .planned: return "calendar"
         case .missed: return "xmark.circle"
@@ -219,6 +236,7 @@ private struct DateCellView: View {
 
     private var statusColor: Color {
         switch status {
+        case .notActive: return .gray
         case .completed: return .green
         case .planned: return .blue
         case .missed: return .orange
@@ -261,9 +279,11 @@ private struct DateCellView: View {
 private struct HabitDayStatusCard: View {
     let selectedDate: Date
     let status: Habit.DayStatus
+    let habitStartDate: Date
 
     private var title: String {
         switch status {
+        case .notActive: return "Not active yet"
         case .completed: return "Completed"
         case .planned: return "Planned"
         case .missed: return "Not completed"
@@ -273,6 +293,7 @@ private struct HabitDayStatusCard: View {
 
     private var subtitle: String {
         switch status {
+        case .notActive: return "This habit starts on \(habitStartDate.formatted(.dateTime.month().day()))."
         case .completed: return "Great job — this day counts toward your streak."
         case .planned: return "Planned day for future consistency."
         case .missed: return "You can still review and update this day."
@@ -282,6 +303,7 @@ private struct HabitDayStatusCard: View {
 
     private var icon: String {
         switch status {
+        case .notActive: return "hourglass"
         case .completed: return "checkmark.seal.fill"
         case .planned: return "calendar.badge.plus"
         case .missed: return "exclamationmark.circle"
@@ -291,6 +313,7 @@ private struct HabitDayStatusCard: View {
 
     private var color: Color {
         switch status {
+        case .notActive: return .gray
         case .completed: return .green
         case .planned: return .blue
         case .missed: return .orange

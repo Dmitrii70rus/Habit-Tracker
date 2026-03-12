@@ -13,39 +13,32 @@ struct ContentView: View {
         (-7...7).compactMap { calendar.date(byAdding: .day, value: $0, to: .now) }
     }
 
+    private var visibleHabits: [Habit] {
+        habits.filter { $0.isActive(on: selectedDate) }
+    }
+
     private var isFutureSelection: Bool {
         calendar.compare(selectedDate, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
     }
 
     private var completedCountForSelectedDate: Int {
-        habits.filter { $0.isCompleted(on: selectedDate) }.count
+        visibleHabits.filter { $0.isCompleted(on: selectedDate) }.count
     }
 
     private var plannedCountForSelectedDate: Int {
-        habits.filter { $0.isPlanned(on: selectedDate) }.count
+        visibleHabits.filter { $0.isPlanned(on: selectedDate) }.count
     }
 
     private var progressRatio: Double {
-        guard !habits.isEmpty else { return 0 }
+        guard !visibleHabits.isEmpty else { return 0 }
         let current = isFutureSelection ? plannedCountForSelectedDate : completedCountForSelectedDate
-        return Double(current) / Double(habits.count)
+        return Double(current) / Double(visibleHabits.count)
     }
 
     private var selectedDateTitle: String {
-        if calendar.isDateInToday(selectedDate) {
-            return "Today"
-        }
-
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now),
-           calendar.isDate(selectedDate, inSameDayAs: yesterday) {
-            return "Yesterday"
-        }
-
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now),
-           calendar.isDate(selectedDate, inSameDayAs: tomorrow) {
-            return "Tomorrow"
-        }
-
+        if calendar.isDateInToday(selectedDate) { return "Today" }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now), calendar.isDate(selectedDate, inSameDayAs: tomorrow) { return "Tomorrow" }
         return selectedDate.formatted(.dateTime.weekday(.wide).month().day())
     }
 
@@ -53,20 +46,14 @@ struct ContentView: View {
         NavigationStack {
             Group {
                 if habits.isEmpty {
-                    EmptyHabitStateView {
-                        viewModel.openAddHabitSheet(for: selectedDate)
-                    }
+                    EmptyHabitStateView { viewModel.openAddHabitSheet(for: selectedDate) }
                 } else {
                     List {
                         Section {
-                            MainDateStripView(
-                                dates: dateRange,
-                                selectedDate: $selectedDate,
-                                habits: habits
-                            )
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
-                            .listRowBackground(Color.clear)
+                            MainDateStripView(dates: dateRange, selectedDate: $selectedDate, habits: habits)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                                .listRowBackground(Color.clear)
                         }
 
                         Section {
@@ -74,7 +61,7 @@ struct ContentView: View {
                                 selectedDateTitle: selectedDateTitle,
                                 completedCount: completedCountForSelectedDate,
                                 plannedCount: plannedCountForSelectedDate,
-                                totalCount: habits.count,
+                                totalCount: visibleHabits.count,
                                 progressRatio: progressRatio,
                                 isFutureDate: isFutureSelection
                             )
@@ -83,42 +70,37 @@ struct ContentView: View {
                             .listRowBackground(Color.clear)
                         }
 
-                        Section {
-                            ForEach(habits) { habit in
-                                NavigationLink {
-                                    HabitDetailView(
-                                        habit: habit,
-                                        viewModel: viewModel,
-                                        initialSelectedDate: selectedDate
-                                    )
-                                } label: {
-                                    HabitRowView(habit: habit, selectedDate: selectedDate) {
-                                        if isFutureSelection {
-                                            let newValue = !habit.isPlanned(on: selectedDate)
-                                            viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: newValue, in: modelContext)
-                                        } else {
-                                            let newValue = !habit.isCompleted(on: selectedDate)
-                                            viewModel.setCompletion(for: habit, on: selectedDate, isCompleted: newValue, in: modelContext)
+                        if visibleHabits.isEmpty {
+                            Section {
+                                ContentUnavailableView(
+                                    "No Habits for This Date",
+                                    systemImage: "calendar.badge.exclamationmark",
+                                    description: Text("Habits will appear on or after their start date.")
+                                )
+                                .frame(maxWidth: .infinity)
+                            }
+                        } else {
+                            Section {
+                                ForEach(visibleHabits) { habit in
+                                    NavigationLink {
+                                        HabitDetailView(habit: habit, viewModel: viewModel, initialSelectedDate: selectedDate)
+                                    } label: {
+                                        HabitRowView(habit: habit, selectedDate: selectedDate) {
+                                            if isFutureSelection {
+                                                viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: !habit.isPlanned(on: selectedDate), in: modelContext)
+                                            } else {
+                                                viewModel.setCompletion(for: habit, on: selectedDate, isCompleted: !habit.isCompleted(on: selectedDate), in: modelContext)
+                                            }
                                         }
                                     }
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        viewModel.requestDeleteHabit(habit)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+                                    .buttonStyle(.plain)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: { Label("Delete", systemImage: "trash") }
+                                        Button { viewModel.openEditHabitSheet(for: habit) } label: { Label("Edit", systemImage: "pencil") }.tint(.blue)
                                     }
-
-                                    Button {
-                                        viewModel.openEditHabitSheet(for: habit)
-                                    } label: {
-                                        Label("Edit", systemImage: "pencil")
-                                    }
-                                    .tint(.blue)
                                 }
                             }
                         }
@@ -131,12 +113,18 @@ struct ContentView: View {
             .navigationTitle("Habit Tracker")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.openAddHabitSheet(for: selectedDate)
-                    } label: {
+                    Button { viewModel.openAddHabitSheet(for: selectedDate) } label: {
                         Label("Add Habit", systemImage: "plus")
                     }
                 }
+            ),
+            presenting: viewModel.habitPendingDelete
+        ) { _ in
+            Button("Delete Habit", role: .destructive) {
+                viewModel.confirmDeleteHabit(in: modelContext)
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelDeleteHabitRequest()
             }
         }
         .sheet(isPresented: $viewModel.isShowingAddSheet) {
@@ -169,42 +157,17 @@ struct ContentView: View {
         }
         .confirmationDialog(
             "Delete habit?",
-            isPresented: Binding(
-                get: { viewModel.habitPendingDelete != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        viewModel.cancelDeleteHabitRequest()
-                    }
-                }
-            ),
+            isPresented: Binding(get: { viewModel.habitPendingDelete != nil }, set: { if !$0 { viewModel.cancelDeleteHabitRequest() } }),
             presenting: viewModel.habitPendingDelete
         ) { _ in
-            Button("Delete Habit", role: .destructive) {
-                viewModel.confirmDeleteHabit(in: modelContext)
-            }
-            Button("Cancel", role: .cancel) {
-                viewModel.cancelDeleteHabitRequest()
-            }
+            Button("Delete Habit", role: .destructive) { viewModel.confirmDeleteHabit(in: modelContext) }
+            Button("Cancel", role: .cancel) { viewModel.cancelDeleteHabitRequest() }
         } message: { _ in
             Text("This action cannot be undone.")
         }
-        .onAppear {
-            viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext)
-        }
-        .alert(
-            "Something went wrong",
-            isPresented: Binding(
-                get: { viewModel.errorMessage != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        viewModel.errorMessage = nil
-                    }
-                }
-            )
-        ) {
-            Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
-            }
+        .onAppear { viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext) }
+        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
