@@ -155,3 +155,41 @@ struct EmptyHabitStateView: View {
         .background(Color(.systemGroupedBackground))
     }
 }
+
+
+struct WeeklySummaryCardView: View {
+    let completed: Int
+    let scheduled: Int
+
+    private var ratio: Double {
+        guard scheduled > 0 else { return 0 }
+        return Double(completed) / Double(scheduled)
+    }
+
+    private var percentText: String {
+        "\(Int(ratio * 100))%"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("This week")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("\(completed) / \(scheduled) habits completed")
+                .font(.headline)
+
+            ProgressView(value: ratio)
+                .tint(.green)
+
+            Text(percentText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}

@@ -36,6 +36,31 @@ struct ContentView: View {
         return Double(current) / Double(visibleHabits.count)
     }
 
+    private var thisWeekSummary: (completed: Int, scheduled: Int) {
+        HabitAnalyticsCalculator.weeklySummary(for: habits, calendar: calendar)
+    }
+
+    private var weeklyCompletionRatio: Double {
+        guard thisWeekSummary.scheduled > 0 else { return 0 }
+        return Double(thisWeekSummary.completed) / Double(thisWeekSummary.scheduled)
+    }
+
+    private var weeklyMotivationText: String {
+        if thisWeekSummary.scheduled == 0 {
+            return "No scheduled habits this week yet."
+        }
+
+        if weeklyCompletionRatio >= 0.8 {
+            return "Great job — keep the streak alive!"
+        }
+
+        if weeklyCompletionRatio >= 0.5 {
+            return "You're building consistency."
+        }
+
+        return "Almost there — one more habit today!"
+    }
+
     private var selectedDateTitle: String {
         if calendar.isDateInToday(selectedDate) { return "Today" }
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
@@ -69,6 +94,24 @@ struct ContentView: View {
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
+                        }
+
+
+                        Section {
+                            WeeklySummaryCardView(
+                                completed: thisWeekSummary.completed,
+                                scheduled: thisWeekSummary.scheduled
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+
+                            Text(weeklyMotivationText)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                                .listRowBackground(Color.clear)
                         }
 
                         if visibleHabits.isEmpty {

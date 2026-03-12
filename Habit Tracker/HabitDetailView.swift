@@ -29,6 +29,10 @@ struct HabitDetailView: View {
         habit.dayStatus(on: selectedDate)
     }
 
+    private var analytics: HabitAnalyticsSnapshot {
+        HabitAnalyticsCalculator.snapshot(for: habit, calendar: calendar)
+    }
+
     private var recurrenceDescription: String {
         switch habit.recurrenceType {
         case .none:
@@ -141,6 +145,26 @@ struct HabitDetailView: View {
                 } else {
                     Text(isFutureSelection ? "Future planned state comes from the recurrence rule." : "Past and current dates can be marked complete or not complete.")
                 }
+            }
+
+            Section("Statistics") {
+                HabitStatisticsView(analytics: analytics)
+
+                Text(analytics.motivationalMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Weekly Progress") {
+                WeeklyProgressView(dates: analytics.weeklyDates, states: analytics.weeklyStates)
+            } footer: {
+                Text("✓ completed • ✗ missed • — not scheduled")
+            }
+
+            Section("Last 9 Weeks") {
+                HabitHeatmapView(states: analytics.heatmapStates)
+            } footer: {
+                Text("Gray: not scheduled • Blue: planned/not completed • Green: completed")
             }
 
             if habit.completionDates.isEmpty && !habit.hasAnyPlannedDates {
@@ -386,6 +410,120 @@ private struct HabitDayStatusCard: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(.secondarySystemBackground))
         )
+    }
+}
+
+
+private struct HabitStatisticsView: View {
+    let analytics: HabitAnalyticsSnapshot
+
+    private var completionPercentText: String {
+        "\(Int(analytics.completionRate * 100))%"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            StatisticRow(label: "Current streak", value: "\(analytics.currentStreak) days")
+            StatisticRow(label: "Best streak", value: "\(analytics.bestStreak) days")
+            StatisticRow(label: "Completion rate", value: completionPercentText)
+            StatisticRow(label: "Total completions", value: "\(analytics.totalCompletions)")
+            StatisticRow(label: "Scheduled days", value: "\(analytics.scheduledDays)")
+        }
+    }
+}
+
+private struct StatisticRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .fontWeight(.semibold)
+        }
+        .font(.subheadline)
+    }
+}
+
+private struct WeeklyProgressView: View {
+    let dates: [Date]
+    let states: [HabitScheduleDayState]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(zip(dates.indices, dates)), id: \.0) { index, date in
+                VStack(spacing: 4) {
+                    Text(date.formatted(.dateTime.weekday(.narrow)))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Text(symbol(for: states[index]))
+                        .font(.headline)
+                        .foregroundStyle(color(for: states[index]))
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func symbol(for state: HabitScheduleDayState) -> String {
+        switch state {
+        case .completed:
+            return "✓"
+        case .missed:
+            return "✗"
+        case .notScheduled:
+            return "—"
+        case .planned:
+            return "•"
+        }
+    }
+
+    private func color(for state: HabitScheduleDayState) -> Color {
+        switch state {
+        case .completed:
+            return .green
+        case .missed:
+            return .orange
+        case .notScheduled:
+            return .secondary
+        case .planned:
+            return .blue
+        }
+    }
+}
+
+private struct HabitHeatmapView: View {
+    let states: [HabitScheduleDayState]
+
+    private let columns = Array(repeating: GridItem(.fixed(10), spacing: 4), count: 9)
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+            ForEach(Array(states.enumerated()), id: \.offset) { _, state in
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(color(for: state))
+                    .frame(width: 10, height: 10)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func color(for state: HabitScheduleDayState) -> Color {
+        switch state {
+        case .notScheduled:
+            return Color(.systemGray5)
+        case .planned:
+            return Color.blue.opacity(0.35)
+        case .completed:
+            return Color.green.opacity(0.8)
+        case .missed:
+            return Color.orange.opacity(0.55)
+        }
     }
 }
 
