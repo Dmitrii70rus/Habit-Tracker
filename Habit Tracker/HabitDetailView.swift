@@ -83,7 +83,7 @@ struct HabitDetailView: View {
                 Text(isFutureSelection ? "Future dates can be planned only. Plans do not increase streaks." : "Past and current dates can be marked complete or not complete.")
             }
 
-            if habit.completionDates.isEmpty && habit.plannedDates.isEmpty {
+            if habit.completionDates.isEmpty && !habit.hasAnyPlannedDates {
                 Section {
                     VStack(spacing: 8) {
                         Image(systemName: "clock.badge.questionmark")

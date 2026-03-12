@@ -16,7 +16,7 @@ final class Habit {
     var iconName: String?
     var colorName: String?
     var completionDates: [Date]
-    var plannedDates: [Date]
+    var plannedDates: [Date]?
     var currentStreak: Int
     var bestStreak: Int
 
@@ -42,12 +42,17 @@ final class Habit {
         self.bestStreak = bestStreak
     }
 
+
+    var hasAnyPlannedDates: Bool {
+        !(plannedDates ?? []).isEmpty
+    }
+
     func isCompleted(on date: Date, calendar: Calendar = .current) -> Bool {
         completionDates.contains { calendar.isDate($0, inSameDayAs: date) }
     }
 
     func isPlanned(on date: Date, calendar: Calendar = .current) -> Bool {
-        plannedDates.contains { calendar.isDate($0, inSameDayAs: date) }
+        (plannedDates ?? []).contains { calendar.isDate($0, inSameDayAs: date) }
     }
 
     @discardableResult
@@ -80,7 +85,7 @@ final class Habit {
 
         if isCompleted {
             completionDates.append(day)
-            plannedDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
+            plannedDates?.removeAll { calendar.isDate($0, inSameDayAs: day) }
         } else {
             completionDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
         }
@@ -101,12 +106,14 @@ final class Habit {
             return false
         }
 
+        var updatedPlans = plannedDates ?? []
         if isPlanned {
-            plannedDates.append(day)
+            updatedPlans.append(day)
         } else {
-            plannedDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
+            updatedPlans.removeAll { calendar.isDate($0, inSameDayAs: day) }
         }
 
+        plannedDates = updatedPlans
         return true
     }
 
