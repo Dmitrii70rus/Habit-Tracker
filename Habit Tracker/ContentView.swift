@@ -229,6 +229,11 @@ private struct MainDateStripView: View {
                         selectedDate = calendar.startOfDay(for: date)
                     }
                 }
+            ),
+            presenting: viewModel.habitPendingDelete
+        ) { _ in
+            Button("Delete Habit", role: .destructive) {
+                viewModel.confirmDeleteHabit(in: modelContext)
             }
             .padding(.vertical, 2)
         }
@@ -320,6 +325,32 @@ private struct ProgressSummaryCardView: View {
 
         return completedCount == totalCount ? "Great job. Keep your streak alive." : "Small steps every day."
     }
+}
+
+private struct ProgressSummaryCardView: View {
+    let completedCount: Int
+    let totalCount: Int
+    let progressRatio: Double
+
+    private var percentageText: String {
+        "\(Int(progressRatio * 100))%"
+    }
+
+    private var motivationalText: String {
+        completedCount == totalCount ? "Great job. Keep your streak alive." : "Small steps every day."
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Today")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("\(completedCount) of \(totalCount) completed")
+                .font(.title3.weight(.semibold))
+
+            ProgressView(value: progressRatio)
+                .tint(.green)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
