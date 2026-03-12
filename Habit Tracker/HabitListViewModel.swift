@@ -110,6 +110,13 @@ final class HabitListViewModel: ObservableObject {
         persistChanges(in: context, errorText: "Couldn't update history. Please try again.")
     }
 
+
+    func setPlanned(for habit: Habit, on day: Date, isPlanned: Bool, in context: ModelContext) {
+        let changed = habit.setPlanned(on: day, isPlanned: isPlanned)
+        guard changed else { return }
+        persistChanges(in: context, errorText: "Couldn't update plan. Please try again.")
+    }
+
     func requestDeleteHabit(_ habit: Habit) {
         habitPendingDelete = habit
     }

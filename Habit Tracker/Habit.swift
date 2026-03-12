@@ -3,12 +3,20 @@ import SwiftData
 
 @Model
 final class Habit {
+    enum DayStatus {
+        case completed
+        case planned
+        case missed
+        case none
+    }
+
     var id: UUID
     var title: String
     var createdAt: Date
     var iconName: String?
     var colorName: String?
     var completionDates: [Date]
+    var plannedDates: [Date]
     var currentStreak: Int
     var bestStreak: Int
 
@@ -19,6 +27,7 @@ final class Habit {
         iconName: String? = nil,
         colorName: String? = nil,
         completionDates: [Date] = [],
+        plannedDates: [Date] = [],
         currentStreak: Int = 0,
         bestStreak: Int = 0
     ) {
@@ -28,21 +37,36 @@ final class Habit {
         self.iconName = iconName
         self.colorName = colorName
         self.completionDates = completionDates
+        self.plannedDates = plannedDates
         self.currentStreak = currentStreak
         self.bestStreak = bestStreak
-    }
-
-    var sortedCompletionDates: [Date] {
-        completionDates.sorted(by: >)
     }
 
     func isCompleted(on date: Date, calendar: Calendar = .current) -> Bool {
         completionDates.contains { calendar.isDate($0, inSameDayAs: date) }
     }
 
+    func isPlanned(on date: Date, calendar: Calendar = .current) -> Bool {
+        plannedDates.contains { calendar.isDate($0, inSameDayAs: date) }
+    }
+
     @discardableResult
     func markDoneForToday(calendar: Calendar = .current) -> Bool {
         setCompletion(on: .now, isCompleted: true, calendar: calendar)
+    }
+
+    func dayStatus(on date: Date, calendar: Calendar = .current) -> DayStatus {
+        let day = calendar.startOfDay(for: date)
+
+        if isCompleted(on: day, calendar: calendar) {
+            return .completed
+        }
+
+        if calendar.compare(day, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending {
+            return isPlanned(on: day, calendar: calendar) ? .planned : .none
+        }
+
+        return completionDates.isEmpty ? .none : .missed
     }
 
     @discardableResult
@@ -56,6 +80,7 @@ final class Habit {
 
         if isCompleted {
             completionDates.append(day)
+            plannedDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
         } else {
             completionDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
         }
@@ -64,8 +89,31 @@ final class Habit {
         return true
     }
 
+    @discardableResult
+    func setPlanned(on date: Date, isPlanned: Bool, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        guard calendar.compare(day, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending else {
+            return false
+        }
+
+        let wasPlanned = self.isPlanned(on: day, calendar: calendar)
+        guard wasPlanned != isPlanned else {
+            return false
+        }
+
+        if isPlanned {
+            plannedDates.append(day)
+        } else {
+            plannedDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
+        }
+
+        return true
+    }
+
     func recalculateStreaks(calendar: Calendar = .current) {
+        let today = calendar.startOfDay(for: .now)
         let uniqueDays = Set(completionDates.map { calendar.startOfDay(for: $0) })
+            .filter { $0 <= today }
         let orderedDays = uniqueDays.sorted(by: >)
 
         guard let latestDay = orderedDays.first else {
@@ -91,7 +139,6 @@ final class Habit {
             runningBest = max(runningBest, runningCurrent)
         }
 
-        let today = calendar.startOfDay(for: .now)
         if calendar.isDate(latestDay, inSameDayAs: today) {
             currentStreak = 1
             var cursor = latestDay
