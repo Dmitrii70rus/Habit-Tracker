@@ -117,6 +117,14 @@ struct ContentView: View {
                         Label("Add Habit", systemImage: "plus")
                     }
                 }
+            ),
+            presenting: viewModel.habitPendingDelete
+        ) { _ in
+            Button("Delete Habit", role: .destructive) {
+                viewModel.confirmDeleteHabit(in: modelContext)
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelDeleteHabitRequest()
             }
         }
         .sheet(isPresented: $viewModel.isShowingAddSheet) {
@@ -163,6 +171,10 @@ struct ContentView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+        .padding(24)
+        .frame(maxWidth: 420)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
     }
 }
 
