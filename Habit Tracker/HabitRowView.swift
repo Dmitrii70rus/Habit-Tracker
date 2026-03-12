@@ -6,32 +6,58 @@ struct HabitRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+            Circle()
+                .fill(accentColor.gradient)
+                .frame(width: 12, height: 12)
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(habit.title)
                     .font(.headline)
 
-                HStack(spacing: 10) {
-                    Label("Current: \(habit.currentStreak)", systemImage: "flame")
-                    Label("Best: \(habit.bestStreak)", systemImage: "trophy")
+                HStack(spacing: 12) {
+                    Text("Current streak: \(dayText(for: habit.currentStreak))")
+                    Text("Best streak: \(dayText(for: habit.bestStreak))")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
             Button(action: onMarkDone) {
                 Image(systemName: habit.isCompleted(on: .now) ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
                     .foregroundStyle(habit.isCompleted(on: .now) ? .green : .secondary)
-                    .accessibilityLabel(habit.isCompleted(on: .now) ? "Completed today" : "Mark as done")
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(habit.isCompleted(on: .now) ? "Completed today" : "Mark as done")
         }
-        .padding(.vertical, 6)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+
+    private var accentColor: Color {
+        switch habit.colorName {
+        case "blue": return .blue
+        case "purple": return .purple
+        case "orange": return .orange
+        case "pink": return .pink
+        case "teal": return .teal
+        default: return .mint
+        }
+    }
+
+    private func dayText(for value: Int) -> String {
+        value == 1 ? "1 day" : "\(value) days"
     }
 }
 
 #Preview {
-    HabitRowView(habit: Habit(title: "Read"), onMarkDone: {})
+    HabitRowView(habit: Habit(title: "Read", colorName: "purple"), onMarkDone: {})
+        .padding()
 }

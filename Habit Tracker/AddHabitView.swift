@@ -1,20 +1,31 @@
 import SwiftUI
 
 struct AddHabitView: View {
-    @ObservedObject var viewModel: HabitListViewModel
+    let title: String
+    let saveButtonTitle: String
+    @Binding var habitTitle: String
+    let isSaveEnabled: Bool
     let onSave: () -> Void
     let onCancel: () -> Void
 
+    @FocusState private var isTitleFieldFocused: Bool
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Habit") {
-                    TextField("e.g. Drink Water", text: $viewModel.newHabitTitle)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                }
+            VStack(spacing: 16) {
+                Text("Give your habit a clear and short name.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                TextField("e.g. Drink Water", text: $habitTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused($isTitleFieldFocused)
             }
-            .navigationTitle("New Habit")
+            .padding()
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -22,7 +33,13 @@ struct AddHabitView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: onSave)
+                    Button(saveButtonTitle, action: onSave)
+                        .disabled(!isSaveEnabled)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    isTitleFieldFocused = true
                 }
             }
         }
@@ -31,7 +48,10 @@ struct AddHabitView: View {
 
 #Preview {
     AddHabitView(
-        viewModel: HabitListViewModel(),
+        title: "New Habit",
+        saveButtonTitle: "Save",
+        habitTitle: .constant(""),
+        isSaveEnabled: false,
         onSave: {},
         onCancel: {}
     )
