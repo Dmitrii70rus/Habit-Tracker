@@ -42,13 +42,24 @@ final class Habit {
 
     @discardableResult
     func markDoneForToday(calendar: Calendar = .current) -> Bool {
-        let today = calendar.startOfDay(for: .now)
+        setCompletion(on: .now, isCompleted: true, calendar: calendar)
+    }
 
-        guard !isCompleted(on: today, calendar: calendar) else {
+    @discardableResult
+    func setCompletion(on date: Date, isCompleted: Bool, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        let wasCompleted = self.isCompleted(on: day, calendar: calendar)
+
+        guard wasCompleted != isCompleted else {
             return false
         }
 
-        completionDates.append(today)
+        if isCompleted {
+            completionDates.append(day)
+        } else {
+            completionDates.removeAll { calendar.isDate($0, inSameDayAs: day) }
+        }
+
         recalculateStreaks(calendar: calendar)
         return true
     }
@@ -94,6 +105,6 @@ final class Habit {
             currentStreak = 0
         }
 
-        bestStreak = max(bestStreak, runningBest)
+        bestStreak = runningBest
     }
 }

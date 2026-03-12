@@ -31,7 +31,7 @@ struct HabitRowView: View {
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityLabel(habit.isCompleted(on: .now) ? "Completed today" : "Mark as done")
         }
         .padding(14)

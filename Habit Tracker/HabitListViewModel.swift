@@ -74,7 +74,6 @@ final class HabitListViewModel: ObservableObject {
         }
     }
 
-
     func refreshStreaksIfNeeded(for habits: [Habit], in context: ModelContext) {
         var needsSave = false
 
@@ -103,6 +102,12 @@ final class HabitListViewModel: ObservableObject {
         withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
             persistChanges(in: context, errorText: "Couldn't update completion. Please try again.")
         }
+    }
+
+    func setCompletion(for habit: Habit, on day: Date, isCompleted: Bool, in context: ModelContext) {
+        let changed = habit.setCompletion(on: day, isCompleted: isCompleted)
+        guard changed else { return }
+        persistChanges(in: context, errorText: "Couldn't update history. Please try again.")
     }
 
     func requestDeleteHabit(_ habit: Habit) {

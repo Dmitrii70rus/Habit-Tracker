@@ -37,9 +37,14 @@ struct ContentView: View {
 
                         Section {
                             ForEach(habits) { habit in
-                                HabitRowView(habit: habit) {
-                                    viewModel.markHabitDone(habit, in: modelContext)
+                                NavigationLink {
+                                    HabitDetailView(habit: habit, viewModel: viewModel)
+                                } label: {
+                                    HabitRowView(habit: habit) {
+                                        viewModel.markHabitDone(habit, in: modelContext)
+                                    }
                                 }
+                                .buttonStyle(.plain)
                                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
