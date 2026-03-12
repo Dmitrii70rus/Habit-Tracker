@@ -29,6 +29,25 @@ struct HabitDetailView: View {
         habit.dayStatus(on: selectedDate)
     }
 
+    private var recurrenceDescription: String {
+        switch habit.recurrenceType {
+        case .none:
+            return "One-time"
+        case .daily:
+            return "Every day"
+        case .weekdays:
+            return "Weekdays"
+        case .weekends:
+            return "Weekends"
+        case .custom:
+            let symbols = calendar.shortWeekdaySymbols
+            let labels = habit.normalizedSelectedWeekdays.compactMap { weekday in
+                symbols[safe: weekday - 1]
+            }
+            return labels.isEmpty ? "Custom weekdays" : labels.joined(separator: " ")
+        }
+    }
+
     init(habit: Habit, viewModel: HabitListViewModel, initialSelectedDate: Date? = nil) {
         self.habit = habit
         self.viewModel = viewModel
@@ -53,6 +72,16 @@ struct HabitDetailView: View {
                     Text("Starts: \(habit.effectiveStartDate().formatted(.dateTime.weekday(.wide).month().day()))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    Text("Repeats: \(recurrenceDescription)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if habit.isReminderEnabled, let reminderTime = habit.reminderTime {
+                        Text("Reminder: \(reminderTime.formatted(date: .omitted, time: .shortened))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.vertical, 6)
             }
@@ -82,13 +111,19 @@ struct HabitDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else if isFutureSelection {
-                    Button {
-                        let newState = !habit.isPlanned(on: selectedDate)
-                        viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: newState, in: modelContext)
-                    } label: {
-                        Label(habit.isPlanned(on: selectedDate) ? "Remove Plan" : "Mark as Planned", systemImage: habit.isPlanned(on: selectedDate) ? "calendar.badge.minus" : "calendar.badge.plus")
+                    if habit.recurrenceType == .none {
+                        Button {
+                            let newState = !habit.isPlanned(on: selectedDate)
+                            viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: newState, in: modelContext)
+                        } label: {
+                            Label(habit.isPlanned(on: selectedDate) ? "Remove Plan" : "Mark as Planned", systemImage: habit.isPlanned(on: selectedDate) ? "calendar.badge.minus" : "calendar.badge.plus")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Text("Planned automatically from recurrence.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.borderedProminent)
                 } else {
                     Button {
                         let newState = !habit.isCompleted(on: selectedDate)
@@ -104,7 +139,7 @@ struct HabitDetailView: View {
                 if isNotActiveSelection {
                     Text("Actions are disabled before the habit start date.")
                 } else {
-                    Text(isFutureSelection ? "Future dates can be planned only. Plans do not increase streaks." : "Past and current dates can be marked complete or not complete.")
+                    Text(isFutureSelection ? "Future planned state comes from the recurrence rule." : "Past and current dates can be marked complete or not complete.")
                 }
             }
 
@@ -147,13 +182,19 @@ struct HabitDetailView: View {
                 saveButtonTitle: "Update",
                 habitTitle: $viewModel.draftHabitTitle,
                 selectedStartOption: .constant(.startToday),
+                startDate: $viewModel.draftStartDate,
+                recurrenceType: $viewModel.draftRecurrenceType,
+                customWeekdays: $viewModel.draftCustomWeekdays,
+                reminderEnabled: $viewModel.draftReminderEnabled,
+                reminderTime: $viewModel.draftReminderTime,
                 selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
                 isPlanOptionVisible: false,
                 isSaveEnabled: viewModel.isDraftTitleValid,
+                onReminderToggle: { _ in },
                 onSave: { viewModel.saveEditedHabit(in: modelContext) },
                 onCancel: { viewModel.closeEditHabitSheet() }
             )
-            .presentationDetents([.fraction(0.3)])
+            .presentationDetents([.large])
         }
         .confirmationDialog(
             "Delete habit?",
@@ -295,7 +336,7 @@ private struct HabitDayStatusCard: View {
         switch status {
         case .notActive: return "This habit starts on \(habitStartDate.formatted(.dateTime.month().day()))."
         case .completed: return "Great job — this day counts toward your streak."
-        case .planned: return "Planned day for future consistency."
+        case .planned: return "Planned day from recurrence."
         case .missed: return "You can still review and update this day."
         case .none: return "No status set for this day yet."
         }
@@ -348,9 +389,15 @@ private struct HabitDayStatusCard: View {
     }
 }
 
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
 #Preview {
     NavigationStack {
-        HabitDetailView(habit: Habit(title: "Read"), viewModel: HabitListViewModel(), initialSelectedDate: .now)
+        HabitDetailView(habit: Habit(title: "Read", recurrenceType: .daily), viewModel: HabitListViewModel(), initialSelectedDate: .now)
             .modelContainer(for: Habit.self, inMemory: true)
     }
 }

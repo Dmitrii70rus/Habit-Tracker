@@ -3,6 +3,7 @@ import SwiftUI
 struct HabitRowView: View {
     let habit: Habit
     let selectedDate: Date
+    let isActionEnabled: Bool
     let onToggleForDate: () -> Void
 
     private let calendar = Calendar.current
@@ -43,6 +44,7 @@ struct HabitRowView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
+            .disabled(!isActionEnabled)
             .accessibilityLabel(actionLabel)
         }
         .padding(14)
@@ -54,7 +56,10 @@ struct HabitRowView: View {
 
     private var statusText: String {
         if isFutureDate {
-            return habit.isPlanned(on: selectedDate) ? "Planned for this day" : "No plan for this day"
+            if habit.recurrenceType == .none {
+                return habit.isPlanned(on: selectedDate) ? "Planned for this day" : "No plan for this day"
+            }
+            return habit.isPlanned(on: selectedDate) ? "Planned by recurrence" : "Not scheduled"
         }
 
         return habit.isCompleted(on: selectedDate) ? "Completed" : "Not completed"
@@ -62,7 +67,10 @@ struct HabitRowView: View {
 
     private var statusIcon: String {
         if isFutureDate {
-            return habit.isPlanned(on: selectedDate) ? "calendar.badge.checkmark" : "calendar.badge.plus"
+            if habit.recurrenceType == .none {
+                return habit.isPlanned(on: selectedDate) ? "calendar.badge.checkmark" : "calendar.badge.plus"
+            }
+            return habit.isPlanned(on: selectedDate) ? "calendar.badge.checkmark" : "calendar.badge.exclamationmark"
         }
 
         return habit.isCompleted(on: selectedDate) ? "checkmark.circle.fill" : "circle"
@@ -70,13 +78,20 @@ struct HabitRowView: View {
 
     private var statusColor: Color {
         if isFutureDate {
-            return habit.isPlanned(on: selectedDate) ? .blue : .secondary
+            if habit.recurrenceType == .none {
+                return habit.isPlanned(on: selectedDate) ? .blue : .secondary
+            }
+            return habit.isPlanned(on: selectedDate) ? .blue : .orange
         }
 
         return habit.isCompleted(on: selectedDate) ? .green : .secondary
     }
 
     private var actionLabel: String {
+        if !isActionEnabled {
+            return "Planned automatically by recurrence"
+        }
+
         if isFutureDate {
             return habit.isPlanned(on: selectedDate) ? "Remove planned day" : "Mark as planned"
         }
@@ -101,6 +116,6 @@ struct HabitRowView: View {
 }
 
 #Preview {
-    HabitRowView(habit: Habit(title: "Read", colorName: "purple"), selectedDate: .now, onToggleForDate: {})
+    HabitRowView(habit: Habit(title: "Read", recurrenceType: .daily, colorName: "purple"), selectedDate: .now, isActionEnabled: true, onToggleForDate: {})
         .padding()
 }

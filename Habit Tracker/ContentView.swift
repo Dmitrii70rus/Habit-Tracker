@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: [SortDescriptor(\Habit.createdAt, order: .forward)]) private var habits: [Habit]
     @StateObject private var viewModel = HabitListViewModel()
+    @StateObject private var reminderManager = ReminderManager()
     @State private var selectedDate = Calendar.current.startOfDay(for: .now)
 
     private let calendar = Calendar.current
@@ -85,8 +86,13 @@ struct ContentView: View {
                                     NavigationLink {
                                         HabitDetailView(habit: habit, viewModel: viewModel, initialSelectedDate: selectedDate)
                                     } label: {
-                                        HabitRowView(habit: habit, selectedDate: selectedDate) {
+                                        HabitRowView(
+                                            habit: habit,
+                                            selectedDate: selectedDate,
+                                            isActionEnabled: !isFutureSelection || habit.recurrenceType == .none
+                                        ) {
                                             if isFutureSelection {
+                                                guard habit.recurrenceType == .none else { return }
                                                 viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: !habit.isPlanned(on: selectedDate), in: modelContext)
                                             } else {
                                                 viewModel.setCompletion(for: habit, on: selectedDate, isCompleted: !habit.isCompleted(on: selectedDate), in: modelContext)
@@ -98,8 +104,14 @@ struct ContentView: View {
                                     .listRowBackground(Color.clear)
                                     .listRowSeparator(.hidden)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: { Label("Delete", systemImage: "trash") }
-                                        Button { viewModel.openEditHabitSheet(for: habit) } label: { Label("Edit", systemImage: "pencil") }.tint(.blue)
+                                        Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+
+                                        Button { viewModel.openEditHabitSheet(for: habit) } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        .tint(.blue)
                                     }
                                 }
                             }
@@ -117,6 +129,67 @@ struct ContentView: View {
                         Label("Add Habit", systemImage: "plus")
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $viewModel.isShowingAddSheet) {
+            AddHabitView(
+                title: "Add Habit",
+                saveButtonTitle: "Save",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: $viewModel.selectedStartOption,
+                startDate: $viewModel.draftStartDate,
+                recurrenceType: $viewModel.draftRecurrenceType,
+                customWeekdays: $viewModel.draftCustomWeekdays,
+                reminderEnabled: $viewModel.draftReminderEnabled,
+                reminderTime: $viewModel.draftReminderTime,
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: isFutureSelection,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onReminderToggle: { enabled in
+                    guard enabled else { return }
+                    Task {
+                        _ = await reminderManager.requestPermissionIfNeeded()
+                    }
+                },
+                onSave: { viewModel.saveNewHabit(in: modelContext) },
+                onCancel: { viewModel.closeAddHabitSheet() }
+            )
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $viewModel.isShowingEditSheet) {
+            AddHabitView(
+                title: "Edit Habit",
+                saveButtonTitle: "Update",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: .constant(.startToday),
+                startDate: $viewModel.draftStartDate,
+                recurrenceType: $viewModel.draftRecurrenceType,
+                customWeekdays: $viewModel.draftCustomWeekdays,
+                reminderEnabled: $viewModel.draftReminderEnabled,
+                reminderTime: $viewModel.draftReminderTime,
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: false,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onReminderToggle: { enabled in
+                    guard enabled else { return }
+                    Task {
+                        _ = await reminderManager.requestPermissionIfNeeded()
+                    }
+                },
+                onSave: { viewModel.saveEditedHabit(in: modelContext) },
+                onCancel: { viewModel.closeEditHabitSheet() }
+            )
+            .presentationDetents([.large])
+        }
+        .confirmationDialog(
+            "Delete habit?",
+            isPresented: Binding(
+                get: { viewModel.habitPendingDelete != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        viewModel.cancelDeleteHabitRequest()
+                    }
+                }
             ),
             presenting: viewModel.habitPendingDelete
         ) { _ in
@@ -126,55 +199,30 @@ struct ContentView: View {
             Button("Cancel", role: .cancel) {
                 viewModel.cancelDeleteHabitRequest()
             }
-        }
-        .sheet(isPresented: $viewModel.isShowingAddSheet) {
-            AddHabitView(
-                title: "Add Habit",
-                saveButtonTitle: "Save",
-                habitTitle: $viewModel.draftHabitTitle,
-                selectedStartOption: $viewModel.selectedStartOption,
-                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
-                isPlanOptionVisible: isFutureSelection,
-                isSaveEnabled: viewModel.isDraftTitleValid,
-                onSave: { viewModel.saveNewHabit(in: modelContext) },
-                onCancel: { viewModel.closeAddHabitSheet() }
-            )
-            .presentationDetents([.fraction(0.42)])
-        }
-        .sheet(isPresented: $viewModel.isShowingEditSheet) {
-            AddHabitView(
-                title: "Edit Habit",
-                saveButtonTitle: "Update",
-                habitTitle: $viewModel.draftHabitTitle,
-                selectedStartOption: .constant(.startToday),
-                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
-                isPlanOptionVisible: false,
-                isSaveEnabled: viewModel.isDraftTitleValid,
-                onSave: { viewModel.saveEditedHabit(in: modelContext) },
-                onCancel: { viewModel.closeEditHabitSheet() }
-            )
-            .presentationDetents([.fraction(0.3)])
-        }
-        .confirmationDialog(
-            "Delete habit?",
-            isPresented: Binding(get: { viewModel.habitPendingDelete != nil }, set: { if !$0 { viewModel.cancelDeleteHabitRequest() } }),
-            presenting: viewModel.habitPendingDelete
-        ) { _ in
-            Button("Delete Habit", role: .destructive) { viewModel.confirmDeleteHabit(in: modelContext) }
-            Button("Cancel", role: .cancel) { viewModel.cancelDeleteHabitRequest() }
         } message: { _ in
             Text("This action cannot be undone.")
         }
-        .onAppear { viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext) }
+        .onAppear {
+            viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext)
+            Task {
+                await reminderManager.scheduleRollingReminders(for: habits)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .habitDataDidChange)) { _ in
+            Task {
+                await reminderManager.scheduleRollingReminders(for: habits)
+            }
+        }
         .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
             Button("OK", role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .padding(24)
-        .frame(maxWidth: 420)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .alert("Reminder Permission", isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
+            Button("OK", role: .cancel) { reminderManager.clearMessage() }
+        } message: {
+            Text(reminderManager.permissionDeniedMessage ?? "")
+        }
     }
 }
 

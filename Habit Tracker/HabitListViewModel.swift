@@ -10,6 +10,11 @@ final class HabitListViewModel: ObservableObject {
     @Published var draftHabitTitle = ""
     @Published var selectedStartOption: AddHabitView.StartOption = .startToday
     @Published var selectedDateForNewHabit = Calendar.current.startOfDay(for: .now)
+    @Published var draftStartDate = Calendar.current.startOfDay(for: .now)
+    @Published var draftRecurrenceType: HabitRecurrence = .none
+    @Published var draftCustomWeekdays: Set<Int> = []
+    @Published var draftReminderEnabled = false
+    @Published var draftReminderTime = Date()
     @Published var editingHabit: Habit?
     @Published var habitPendingDelete: Habit?
     @Published var errorMessage: String?
@@ -23,6 +28,11 @@ final class HabitListViewModel: ObservableObject {
         draftHabitTitle = ""
         selectedDateForNewHabit = normalizedDate
         selectedStartOption = isFutureDate(normalizedDate) ? .planForSelectedDate : .startToday
+        draftStartDate = isFutureDate(normalizedDate) ? normalizedDate : Calendar.current.startOfDay(for: .now)
+        draftRecurrenceType = .none
+        draftCustomWeekdays = []
+        draftReminderEnabled = false
+        draftReminderTime = defaultReminderTime()
         editingHabit = nil
         errorMessage = nil
         isShowingAddSheet = true
@@ -34,6 +44,13 @@ final class HabitListViewModel: ObservableObject {
 
     func openEditHabitSheet(for habit: Habit) {
         draftHabitTitle = habit.title
+        selectedDateForNewHabit = Calendar.current.startOfDay(for: .now)
+        selectedStartOption = .startToday
+        draftStartDate = habit.effectiveStartDate()
+        draftRecurrenceType = habit.recurrenceType
+        draftCustomWeekdays = Set(habit.normalizedSelectedWeekdays)
+        draftReminderEnabled = habit.isReminderEnabled
+        draftReminderTime = habit.reminderTime ?? defaultReminderTime()
         editingHabit = habit
         errorMessage = nil
         isShowingEditSheet = true
@@ -52,23 +69,21 @@ final class HabitListViewModel: ObservableObject {
             return
         }
 
-        let today = Calendar.current.startOfDay(for: .now)
-        let startDate: Date
-        if selectedStartOption == .planForSelectedDate,
-           isFutureDate(selectedDateForNewHabit) {
-            startDate = selectedDateForNewHabit
-        } else {
-            startDate = today
-        }
+        let normalizedStartDate = resolvedStartDateForNewHabit()
+        let recurrence = resolvedRecurrenceType()
+        let customDays = recurrence == .custom ? Array(draftCustomWeekdays).sorted() : []
 
         let accentOptions = ["mint", "blue", "purple", "orange", "pink", "teal"]
         let accent = accentOptions[Int.random(in: 0..<accentOptions.count)]
-        let habit = Habit(title: trimmedTitle, startDate: startDate, colorName: accent)
-
-        if selectedStartOption == .planForSelectedDate,
-           isFutureDate(selectedDateForNewHabit) {
-            _ = habit.setPlanned(on: selectedDateForNewHabit, isPlanned: true)
-        }
+        let habit = Habit(
+            title: trimmedTitle,
+            startDate: normalizedStartDate,
+            recurrenceType: recurrence,
+            selectedWeekdays: customDays,
+            reminderEnabled: draftReminderEnabled,
+            reminderTime: draftReminderEnabled ? draftReminderTime : nil,
+            colorName: accent
+        )
 
         context.insert(habit)
 
@@ -88,7 +103,14 @@ final class HabitListViewModel: ObservableObject {
             return
         }
 
+        let recurrence = resolvedRecurrenceType()
+
         editingHabit.title = trimmedTitle
+        editingHabit.startDate = Calendar.current.startOfDay(for: draftStartDate)
+        editingHabit.recurrenceType = recurrence
+        editingHabit.selectedWeekdays = recurrence == .custom ? Array(draftCustomWeekdays).sorted() : []
+        editingHabit.reminderEnabled = draftReminderEnabled
+        editingHabit.reminderTime = draftReminderEnabled ? draftReminderTime : nil
         persistChanges(in: context, errorText: "Couldn't save your changes. Please try again.") {
             self.closeEditHabitSheet()
         }
@@ -137,7 +159,9 @@ final class HabitListViewModel: ObservableObject {
     }
 
     func requestDeleteHabit(_ habit: Habit) {
-        habitPendingDelete = habit
+        DispatchQueue.main.async {
+            self.habitPendingDelete = habit
+        }
     }
 
     func confirmDeleteHabit(in context: ModelContext) {
@@ -146,22 +170,53 @@ final class HabitListViewModel: ObservableObject {
         }
 
         context.delete(habitPendingDelete)
-        self.habitPendingDelete = nil
+        DispatchQueue.main.async {
+            self.habitPendingDelete = nil
+        }
 
         persistChanges(in: context, errorText: "Couldn't delete habit. Please try again.")
     }
 
     func cancelDeleteHabitRequest() {
-        habitPendingDelete = nil
+        DispatchQueue.main.async {
+            self.habitPendingDelete = nil
+        }
+    }
+
+    private func resolvedStartDateForNewHabit() -> Date {
+        let today = Calendar.current.startOfDay(for: .now)
+
+        if selectedStartOption == .planForSelectedDate,
+           isFutureDate(selectedDateForNewHabit) {
+            return selectedDateForNewHabit
+        }
+
+        return Calendar.current.startOfDay(for: max(draftStartDate, today))
+    }
+
+    private func resolvedRecurrenceType() -> HabitRecurrence {
+        if draftRecurrenceType == .custom, draftCustomWeekdays.isEmpty {
+            return .none
+        }
+
+        return draftRecurrenceType
     }
 
     private func isFutureDate(_ date: Date) -> Bool {
         Calendar.current.compare(date, to: Calendar.current.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
     }
 
+    private func defaultReminderTime() -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month, .day], from: now)
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: calendar.date(from: components) ?? now) ?? now
+    }
+
     private func persistChanges(in context: ModelContext, errorText: String, completion: (() -> Void)? = nil) {
         do {
             try context.save()
+            NotificationCenter.default.post(name: .habitDataDidChange, object: nil)
             completion?()
         } catch {
             errorMessage = errorText

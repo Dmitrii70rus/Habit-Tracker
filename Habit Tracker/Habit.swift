@@ -1,6 +1,31 @@
 import Foundation
 import SwiftData
 
+enum HabitRecurrence: String, Codable, CaseIterable, Identifiable {
+    case none
+    case daily
+    case weekdays
+    case weekends
+    case custom
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .none:
+            return "One-time"
+        case .daily:
+            return "Every day"
+        case .weekdays:
+            return "Weekdays"
+        case .weekends:
+            return "Weekends"
+        case .custom:
+            return "Custom weekdays"
+        }
+    }
+}
+
 @Model
 final class Habit {
     enum DayStatus {
@@ -15,6 +40,10 @@ final class Habit {
     var title: String
     var createdAt: Date
     var startDate: Date?
+    var recurrenceRawValue: String?
+    var selectedWeekdays: [Int]?
+    var reminderEnabled: Bool?
+    var reminderTime: Date?
     var iconName: String?
     var colorName: String?
     var completionDates: [Date]
@@ -27,6 +56,10 @@ final class Habit {
         title: String,
         createdAt: Date = .now,
         startDate: Date? = nil,
+        recurrenceType: HabitRecurrence = .none,
+        selectedWeekdays: [Int] = [],
+        reminderEnabled: Bool = false,
+        reminderTime: Date? = nil,
         iconName: String? = nil,
         colorName: String? = nil,
         completionDates: [Date] = [],
@@ -38,12 +71,29 @@ final class Habit {
         self.title = title
         self.createdAt = createdAt
         self.startDate = startDate
+        self.recurrenceRawValue = recurrenceType.rawValue
+        self.selectedWeekdays = selectedWeekdays
+        self.reminderEnabled = reminderEnabled
+        self.reminderTime = reminderTime
         self.iconName = iconName
         self.colorName = colorName
         self.completionDates = completionDates
         self.plannedDates = plannedDates
         self.currentStreak = currentStreak
         self.bestStreak = bestStreak
+    }
+
+    var recurrenceType: HabitRecurrence {
+        get { HabitRecurrence(rawValue: recurrenceRawValue ?? "") ?? .none }
+        set { recurrenceRawValue = newValue.rawValue }
+    }
+
+    var normalizedSelectedWeekdays: [Int] {
+        Array(Set(selectedWeekdays ?? [])).sorted()
+    }
+
+    var isReminderEnabled: Bool {
+        reminderEnabled ?? false
     }
 
     var hasAnyPlannedDates: Bool {
@@ -55,8 +105,30 @@ final class Habit {
     }
 
     func isActive(on date: Date, calendar: Calendar = .current) -> Bool {
+        calendar.startOfDay(for: date) >= effectiveStartDate(calendar: calendar)
+    }
+
+    func recurrenceMatches(on date: Date, calendar: Calendar = .current) -> Bool {
         let day = calendar.startOfDay(for: date)
-        return day >= effectiveStartDate(calendar: calendar)
+
+        guard isActive(on: day, calendar: calendar) else {
+            return false
+        }
+
+        let weekday = calendar.component(.weekday, from: day)
+
+        switch recurrenceType {
+        case .none:
+            return calendar.isDate(day, inSameDayAs: effectiveStartDate(calendar: calendar))
+        case .daily:
+            return true
+        case .weekdays:
+            return (2...6).contains(weekday)
+        case .weekends:
+            return weekday == 1 || weekday == 7
+        case .custom:
+            return normalizedSelectedWeekdays.contains(weekday)
+        }
     }
 
     func isCompleted(on date: Date, calendar: Calendar = .current) -> Bool {
@@ -64,7 +136,13 @@ final class Habit {
     }
 
     func isPlanned(on date: Date, calendar: Calendar = .current) -> Bool {
-        (plannedDates ?? []).contains { calendar.isDate($0, inSameDayAs: date) }
+        let day = calendar.startOfDay(for: date)
+
+        if recurrenceMatches(on: day, calendar: calendar) {
+            return true
+        }
+
+        return (plannedDates ?? []).contains { calendar.isDate($0, inSameDayAs: day) }
     }
 
     @discardableResult
@@ -83,11 +161,12 @@ final class Habit {
             return .completed
         }
 
-        if calendar.compare(day, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending {
+        let isFutureDay = calendar.compare(day, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
+        if isFutureDay {
             return isPlanned(on: day, calendar: calendar) ? .planned : .none
         }
 
-        return completionDates.isEmpty ? .none : .missed
+        return recurrenceMatches(on: day, calendar: calendar) ? .missed : .none
     }
 
     @discardableResult
@@ -123,8 +202,9 @@ final class Habit {
             return false
         }
 
-        let wasPlanned = self.isPlanned(on: day, calendar: calendar)
-        guard wasPlanned != isPlanned else {
+        let wasPlannedManually = (plannedDates ?? []).contains { calendar.isDate($0, inSameDayAs: day) }
+
+        guard wasPlannedManually != isPlanned else {
             return false
         }
 
