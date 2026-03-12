@@ -1,10 +1,3 @@
-//
-//  Habit_TrackerApp.swift
-//  Habit Tracker
-//
-//  Created by Dmitry Tkachev on 12.03.2026.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,7 +5,7 @@ import SwiftData
 struct Habit_TrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Habit.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
