@@ -8,7 +8,8 @@ struct HabitDetailView: View {
     let habit: Habit
     @ObservedObject var viewModel: HabitListViewModel
 
-    @State private var selectedDate = Calendar.current.startOfDay(for: .now)
+    @State private var selectedDate: Date
+    let initialSelectedDate: Date?
 
     private let calendar = Calendar.current
 
@@ -24,7 +25,15 @@ struct HabitDetailView: View {
         habit.dayStatus(on: selectedDate)
     }
 
+    init(habit: Habit, viewModel: HabitListViewModel, initialSelectedDate: Date? = nil) {
+        self.habit = habit
+        self.viewModel = viewModel
+        self.initialSelectedDate = initialSelectedDate
+        _selectedDate = State(initialValue: Calendar.current.startOfDay(for: initialSelectedDate ?? .now))
+    }
+
     var body: some View {
+
         List {
             Section {
                 VStack(alignment: .leading, spacing: 10) {
@@ -121,6 +130,9 @@ struct HabitDetailView: View {
                 title: "Edit Habit",
                 saveButtonTitle: "Update",
                 habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: .constant(.startToday),
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: false,
                 isSaveEnabled: viewModel.isDraftTitleValid,
                 onSave: { viewModel.saveEditedHabit(in: modelContext) },
                 onCancel: { viewModel.closeEditHabitSheet() }
@@ -315,7 +327,7 @@ private struct HabitDayStatusCard: View {
 
 #Preview {
     NavigationStack {
-        HabitDetailView(habit: Habit(title: "Read"), viewModel: HabitListViewModel())
+        HabitDetailView(habit: Habit(title: "Read"), viewModel: HabitListViewModel(), initialSelectedDate: .now)
             .modelContainer(for: Habit.self, inMemory: true)
     }
 }

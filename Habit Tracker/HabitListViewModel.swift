@@ -8,6 +8,8 @@ final class HabitListViewModel: ObservableObject {
     @Published var isShowingAddSheet = false
     @Published var isShowingEditSheet = false
     @Published var draftHabitTitle = ""
+    @Published var selectedStartOption: AddHabitView.StartOption = .startToday
+    @Published var selectedDateForNewHabit = Calendar.current.startOfDay(for: .now)
     @Published var editingHabit: Habit?
     @Published var habitPendingDelete: Habit?
     @Published var errorMessage: String?
@@ -16,8 +18,11 @@ final class HabitListViewModel: ObservableObject {
         !draftHabitTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    func openAddHabitSheet() {
+    func openAddHabitSheet(for selectedDate: Date) {
+        let normalizedDate = Calendar.current.startOfDay(for: selectedDate)
         draftHabitTitle = ""
+        selectedDateForNewHabit = normalizedDate
+        selectedStartOption = isFutureDate(normalizedDate) ? .planForSelectedDate : .startToday
         editingHabit = nil
         errorMessage = nil
         isShowingAddSheet = true
@@ -50,6 +55,12 @@ final class HabitListViewModel: ObservableObject {
         let accentOptions = ["mint", "blue", "purple", "orange", "pink", "teal"]
         let accent = accentOptions[Int.random(in: 0..<accentOptions.count)]
         let habit = Habit(title: trimmedTitle, colorName: accent)
+
+        if selectedStartOption == .planForSelectedDate,
+           isFutureDate(selectedDateForNewHabit) {
+            _ = habit.setPlanned(on: selectedDateForNewHabit, isPlanned: true)
+        }
+
         context.insert(habit)
 
         persistChanges(in: context, errorText: "Couldn't save your habit. Please try again.") {
@@ -110,7 +121,6 @@ final class HabitListViewModel: ObservableObject {
         persistChanges(in: context, errorText: "Couldn't update history. Please try again.")
     }
 
-
     func setPlanned(for habit: Habit, on day: Date, isPlanned: Bool, in context: ModelContext) {
         let changed = habit.setPlanned(on: day, isPlanned: isPlanned)
         guard changed else { return }
@@ -134,6 +144,10 @@ final class HabitListViewModel: ObservableObject {
 
     func cancelDeleteHabitRequest() {
         habitPendingDelete = nil
+    }
+
+    private func isFutureDate(_ date: Date) -> Bool {
+        Calendar.current.compare(date, to: Calendar.current.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
     }
 
     private func persistChanges(in context: ModelContext, errorText: String, completion: (() -> Void)? = nil) {

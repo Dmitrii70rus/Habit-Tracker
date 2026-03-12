@@ -2,7 +2,14 @@ import SwiftUI
 
 struct HabitRowView: View {
     let habit: Habit
-    let onMarkDone: () -> Void
+    let selectedDate: Date
+    let onToggleForDate: () -> Void
+
+    private let calendar = Calendar.current
+
+    private var isFutureDate: Bool {
+        calendar.compare(selectedDate, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -20,25 +27,61 @@ struct HabitRowView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+                Text(statusText)
+                    .font(.caption2)
+                    .foregroundStyle(statusColor)
             }
 
             Spacer(minLength: 8)
 
-            Button(action: onMarkDone) {
-                Image(systemName: habit.isCompleted(on: .now) ? "checkmark.circle.fill" : "circle")
+            Button(action: onToggleForDate) {
+                Image(systemName: statusIcon)
                     .font(.title2)
-                    .foregroundStyle(habit.isCompleted(on: .now) ? .green : .secondary)
+                    .foregroundStyle(statusColor)
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel(habit.isCompleted(on: .now) ? "Completed today" : "Mark as done")
+            .accessibilityLabel(actionLabel)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(.secondarySystemBackground))
         )
+    }
+
+    private var statusText: String {
+        if isFutureDate {
+            return habit.isPlanned(on: selectedDate) ? "Planned for this day" : "No plan for this day"
+        }
+
+        return habit.isCompleted(on: selectedDate) ? "Completed" : "Not completed"
+    }
+
+    private var statusIcon: String {
+        if isFutureDate {
+            return habit.isPlanned(on: selectedDate) ? "calendar.badge.checkmark" : "calendar.badge.plus"
+        }
+
+        return habit.isCompleted(on: selectedDate) ? "checkmark.circle.fill" : "circle"
+    }
+
+    private var statusColor: Color {
+        if isFutureDate {
+            return habit.isPlanned(on: selectedDate) ? .blue : .secondary
+        }
+
+        return habit.isCompleted(on: selectedDate) ? .green : .secondary
+    }
+
+    private var actionLabel: String {
+        if isFutureDate {
+            return habit.isPlanned(on: selectedDate) ? "Remove planned day" : "Mark as planned"
+        }
+
+        return habit.isCompleted(on: selectedDate) ? "Unmark complete" : "Mark as complete"
     }
 
     private var accentColor: Color {
@@ -58,6 +101,6 @@ struct HabitRowView: View {
 }
 
 #Preview {
-    HabitRowView(habit: Habit(title: "Read", colorName: "purple"), onMarkDone: {})
+    HabitRowView(habit: Habit(title: "Read", colorName: "purple"), selectedDate: .now, onToggleForDate: {})
         .padding()
 }
