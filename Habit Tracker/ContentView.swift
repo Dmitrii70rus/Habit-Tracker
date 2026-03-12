@@ -1,61 +1,71 @@
-//
-//  ContentView.swift
-//  Habit Tracker
-//
-//  Created by Dmitry Tkachev on 12.03.2026.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query(sort: [SortDescriptor(\Habit.createdAt, order: .forward)]) private var habits: [Habit]
+    @StateObject private var viewModel = HabitListViewModel()
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        NavigationStack {
+            Group {
+                if habits.isEmpty {
+                    ContentUnavailableView(
+                        "No Habits Yet",
+                        systemImage: "checklist",
+                        description: Text("Create your first habit to start building consistency.")
+                    )
+                } else {
+                    List {
+                        ForEach(habits) { habit in
+                            HabitRowView(habit: habit) {
+                                viewModel.markHabitDone(habit, in: modelContext)
+                            }
+                        }
+                        .onDelete { offsets in
+                            viewModel.deleteHabits(at: offsets, from: habits, in: modelContext)
+                        }
                     }
+                    .listStyle(.plain)
                 }
-                .onDelete(perform: deleteItems)
             }
+            .navigationTitle("Habit Tracker")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        viewModel.openAddHabitSheet()
+                    } label: {
+                        Label("Add Habit", systemImage: "plus")
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .sheet(isPresented: $viewModel.isShowingAddSheet) {
+            AddHabitView(
+                viewModel: viewModel,
+                onSave: { viewModel.saveHabit(in: modelContext) },
+                onCancel: { viewModel.closeAddHabitSheet() }
+            )
+            .presentationDetents([.medium])
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        .alert("Something went wrong", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { show in
+                if !show {
+                    viewModel.errorMessage = nil
+                }
             }
+        )) {
+            Button("OK", role: .cancel) {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Habit.self, inMemory: true)
 }
