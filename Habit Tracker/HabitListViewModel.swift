@@ -141,9 +141,7 @@ final class HabitListViewModel: ObservableObject {
             return
         }
 
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-            persistChanges(in: context, errorText: "Couldn't update completion. Please try again.")
-        }
+        persistChanges(in: context, errorText: "Couldn't update completion. Please try again.")
     }
 
     func setCompletion(for habit: Habit, on day: Date, isCompleted: Bool, in context: ModelContext) {
