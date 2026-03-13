@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -65,6 +68,11 @@ struct ContentView: View {
         return "Almost there — one more habit today!"
     }
 
+
+    private var todaySnapshot: SharedHabitSnapshot {
+        SharedHabitSnapshotBuilder.build(from: habits, referenceDate: .now, calendar: calendar)
+    }
+
     private var selectedDateTitle: String {
         if calendar.isDateInToday(selectedDate) { return "Today" }
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
@@ -119,6 +127,27 @@ struct ContentView: View {
                                 .listRowSeparator(.hidden)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                                 .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            OverallStreakSummaryView(
+                                currentStreak: todaySnapshot.overallCurrentStreak,
+                                bestStreak: todaySnapshot.overallBestStreak
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            DailyReminderSummaryView(
+                                plannedCount: todaySnapshot.plannedHabits,
+                                completedCount: todaySnapshot.completedHabits,
+                                remainingCount: todaySnapshot.remainingHabits
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
                         }
 
                         if visibleHabits.isEmpty {
@@ -280,11 +309,13 @@ struct ContentView: View {
         }
         .onAppear {
             viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext)
+            persistSharedSnapshot()
             Task {
                 await reminderManager.scheduleRollingReminders(for: habits)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .habitDataDidChange)) { _ in
+            persistSharedSnapshot()
             Task {
                 await reminderManager.scheduleRollingReminders(for: habits)
             }
@@ -304,6 +335,13 @@ struct ContentView: View {
         } message: {
             Text(purchaseManager.errorMessage ?? "")
         }
+    }
+
+    private func persistSharedSnapshot() {
+        SharedHabitSnapshotBuilder.save(todaySnapshot)
+#if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+#endif
     }
 
     private func handleAddHabitTap() {
@@ -326,6 +364,10 @@ struct ContentView: View {
         } message: {
             Text(reminderManager.permissionDeniedMessage ?? "")
         }
+    }
+
+    private func canCreateHabit() -> Bool {
+        purchaseManager.isPremiumUnlocked || habits.count < freeHabitLimit
     }
 
     private func canCreateHabit() -> Bool {

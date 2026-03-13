@@ -193,3 +193,72 @@ struct WeeklySummaryCardView: View {
         )
     }
 }
+
+
+struct OverallStreakSummaryView: View {
+    let currentStreak: Int
+    let bestStreak: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Overall Streak")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("Current: \(currentStreak) day\(currentStreak == 1 ? "" : "s")")
+                    .font(.headline)
+                Text("Best: \(bestStreak) day\(bestStreak == 1 ? "" : "s")")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "flame.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}
+
+struct DailyReminderSummaryView: View {
+    let plannedCount: Int
+    let completedCount: Int
+    let remainingCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Daily Reminder Summary")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                summaryPill(title: "Planned", value: plannedCount, color: .blue)
+                summaryPill(title: "Done", value: completedCount, color: .green)
+                summaryPill(title: "Remaining", value: remainingCount, color: .orange)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+
+    private func summaryPill(title: String, value: Int, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("\(value)")
+                .font(.headline)
+                .foregroundStyle(color)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
