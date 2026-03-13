@@ -258,22 +258,46 @@ private struct DateStripView: View {
     let habit: Habit
 
     private let calendar = Calendar.current
+    @State private var hasScrolledInitially = false
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(dates, id: \.self) { date in
-                    DateCellView(
-                        date: date,
-                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                        status: habit.dayStatus(on: date),
-                        isToday: calendar.isDateInToday(date)
-                    ) {
-                        selectedDate = calendar.startOfDay(for: date)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(dates, id: \.self) { date in
+                        DateCellView(
+                            date: date,
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            status: habit.dayStatus(on: date),
+                            isToday: calendar.isDateInToday(date)
+                        ) {
+                            selectedDate = calendar.startOfDay(for: date)
+                        }
+                        .id(calendar.startOfDay(for: date))
                     }
                 }
+                .padding(.vertical, 2)
             }
-            .padding(.vertical, 2)
+            .onAppear {
+                guard !hasScrolledInitially else { return }
+                hasScrolledInitially = true
+                scrollToSelected(proxy: proxy, animated: false)
+            }
+            .onChange(of: selectedDate) { _, _ in
+                scrollToSelected(proxy: proxy, animated: true)
+            }
+        }
+    }
+
+    private func scrollToSelected(proxy: ScrollViewProxy, animated: Bool) {
+        let action = {
+            proxy.scrollTo(calendar.startOfDay(for: selectedDate), anchor: .center)
+        }
+
+        if animated {
+            withAnimation(.easeInOut(duration: 0.22)) { action() }
+        } else {
+            action()
         }
     }
 }
@@ -318,14 +342,14 @@ private struct DateCellView: View {
             VStack(spacing: 6) {
                 Text(weekday)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isToday ? Color.accentColor : .secondary)
 
                 Image(systemName: statusIcon)
                     .font(.headline)
                     .foregroundStyle(statusColor)
 
                 Text(dayNumber)
-                    .font(.caption.weight(isToday ? .semibold : .regular))
+                    .font(.caption.weight(isSelected || isToday ? .semibold : .regular))
                     .foregroundStyle(.primary)
             }
             .frame(width: 44)
@@ -335,10 +359,8 @@ private struct DateCellView: View {
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color(.secondarySystemBackground))
             )
             .overlay {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.accentColor, lineWidth: 1)
-                }
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isSelected ? Color.accentColor : (isToday ? Color.accentColor.opacity(0.35) : .clear), lineWidth: isSelected ? 1.3 : 1)
             }
         }
         .buttonStyle(.plain)

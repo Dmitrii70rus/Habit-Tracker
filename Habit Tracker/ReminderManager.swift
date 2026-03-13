@@ -20,11 +20,11 @@ final class ReminderManager: ObservableObject {
             do {
                 return try await center.requestAuthorization(options: [.alert, .badge, .sound])
             } catch {
-                permissionDeniedMessage = "Couldn't request notification permission."
+                setPermissionMessageIfNeeded("Couldn't request notification permission.")
                 return false
             }
         case .denied:
-            permissionDeniedMessage = "Notifications are disabled for Habit Tracker. You can enable them in Settings."
+            setPermissionMessageIfNeeded("Notifications are disabled for Habit Tracker. You can enable them in Settings.")
             return false
         @unknown default:
             return false
@@ -34,12 +34,15 @@ final class ReminderManager: ObservableObject {
     func scheduleRollingReminders(for habits: [Habit], daysAhead: Int = 10) async {
         await removeExistingHabitNotifications()
 
+        let habitsWithReminderTime = habits.filter { $0.isReminderEnabled && $0.reminderTime != nil }
+        guard !habitsWithReminderTime.isEmpty else { return }
+
         let allowed = await requestPermissionIfNeeded()
         guard allowed else { return }
 
         let today = calendar.startOfDay(for: .now)
 
-        for habit in habits where habit.isReminderEnabled {
+        for habit in habitsWithReminderTime {
             guard let reminderTime = habit.reminderTime else { continue }
 
             for dayOffset in 0..<daysAhead {
@@ -83,8 +86,14 @@ final class ReminderManager: ObservableObject {
         do {
             try await center.add(request)
         } catch {
-            permissionDeniedMessage = "Couldn't schedule reminders for \(habit.title)."
+            setPermissionMessageIfNeeded("Couldn't schedule reminders for \(habit.title).")
         }
+    }
+
+
+    private func setPermissionMessageIfNeeded(_ message: String) {
+        guard permissionDeniedMessage == nil else { return }
+        permissionDeniedMessage = message
     }
 
     private func removeExistingHabitNotifications() async {

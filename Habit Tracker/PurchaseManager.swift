@@ -40,6 +40,7 @@ final class PurchaseManager: ObservableObject {
 
         isLoadingProducts = true
         productLoadMessage = nil
+        premiumProduct = nil
 
         defer {
             isLoadingProducts = false
@@ -102,7 +103,9 @@ final class PurchaseManager: ObservableObject {
             try await AppStore.sync()
             await refreshPurchasedState()
 
-            if !isPremiumUnlocked {
+            if isPremiumUnlocked {
+                errorMessage = "Purchases restored successfully."
+            } else {
                 errorMessage = "No previous purchase was found for this Apple ID."
             }
         } catch {
