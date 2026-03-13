@@ -45,8 +45,8 @@ enum SharedHabitSnapshotBuilder {
         let planned = activeHabits.filter { $0.isPlanned(on: today, calendar: calendar) }
         let remaining = max(0, activeHabits.count - completed.count)
 
-        let overallCurrentStreak = activeHabits.map(\ .currentStreak).max() ?? 0
-        let overallBestStreak = activeHabits.map(\ .bestStreak).max() ?? 0
+        let overallCurrentStreak = activeHabits.map(\.currentStreak).max() ?? 0
+        let overallBestStreak = activeHabits.map(\.bestStreak).max() ?? 0
 
         let items = activeHabits.prefix(5).map { habit in
             SharedHabitSnapshot.HabitItem(

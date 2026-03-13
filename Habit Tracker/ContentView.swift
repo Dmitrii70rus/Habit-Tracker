@@ -19,7 +19,10 @@ struct ContentView: View {
     private let freeHabitLimit = 3
 
     private var dateRange: [Date] {
-        (-7...7).compactMap { calendar.date(byAdding: .day, value: $0, to: .now) }
+        (-7...7).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: .now) else { return nil }
+            return calendar.startOfDay(for: date)
+        }
     }
 
     private var visibleHabits: [Habit] {
@@ -265,6 +268,9 @@ struct ContentView: View {
             PaywallView(
                 displayPrice: premiumDisplayPrice,
                 isProcessing: purchaseManager.isProcessingPurchase,
+                isLoadingProduct: purchaseManager.isLoadingProducts,
+                isPurchaseAvailable: purchaseManager.isProductReady,
+                productLoadMessage: purchaseManager.productLoadMessage,
                 onPurchase: {
                     Task {
                         await purchaseManager.purchasePremium()
@@ -280,9 +286,17 @@ struct ContentView: View {
                             isShowingPaywall = false
                         }
                     }
+                },
+                onRetryLoad: {
+                    Task {
+                        await purchaseManager.loadProducts()
+                    }
                 }
             )
             .presentationDetents([.medium])
+            .task {
+                await purchaseManager.loadProducts()
+            }
         }
         .confirmationDialog(
             "Delete habit?",
@@ -336,6 +350,11 @@ struct ContentView: View {
         } message: {
             Text(purchaseManager.errorMessage ?? "")
         }
+        .alert("Product Availability", isPresented: Binding(get: { purchaseManager.productLoadMessage != nil && !isShowingPaywall }, set: { if !$0 { purchaseManager.clearProductLoadMessage() } })) {
+            Button("OK", role: .cancel) { purchaseManager.clearProductLoadMessage() }
+        } message: {
+            Text(purchaseManager.productLoadMessage ?? "")
+        }
     }
 
     private func persistSharedSnapshot() {
@@ -349,7 +368,9 @@ struct ContentView: View {
         if canCreateHabit() {
             viewModel.openAddHabitSheet(for: selectedDate)
         } else {
+            purchaseManager.clearProductLoadMessage()
             isShowingPaywall = true
+            Task { await purchaseManager.loadProducts() }
         }
     }
 
@@ -358,7 +379,9 @@ struct ContentView: View {
             viewModel.saveNewHabit(in: modelContext)
         } else {
             viewModel.closeAddHabitSheet()
+            purchaseManager.clearProductLoadMessage()
             isShowingPaywall = true
+            Task { await purchaseManager.loadProducts() }
         }
     }
 

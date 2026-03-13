@@ -10,10 +10,16 @@ final class PurchaseManager: ObservableObject {
     @Published var premiumProduct: Product?
     @Published var errorMessage: String?
     @Published var isProcessingPurchase = false
+    @Published var isLoadingProducts = false
+    @Published var productLoadMessage: String?
 
     private let userDefaults = UserDefaults.standard
     private let premiumKey = "habittracker.premium.unlocked"
     private var updatesTask: Task<Void, Never>?
+
+    var isProductReady: Bool {
+        premiumProduct != nil
+    }
 
     init() {
         isPremiumUnlocked = userDefaults.bool(forKey: premiumKey)
@@ -30,17 +36,34 @@ final class PurchaseManager: ObservableObject {
     }
 
     func loadProducts() async {
+        guard !isLoadingProducts else { return }
+
+        isLoadingProducts = true
+        productLoadMessage = nil
+
+        defer {
+            isLoadingProducts = false
+        }
+
         do {
             let products = try await Product.products(for: [Self.productID])
             premiumProduct = products.first
+
+            if premiumProduct == nil {
+                productLoadMessage = "Premium is unavailable right now. Please try again later or verify your StoreKit test configuration."
+            }
         } catch {
-            errorMessage = "Couldn't load purchase options right now."
+            productLoadMessage = "Couldn't load premium options. Check your connection or StoreKit setup and try again."
         }
     }
 
     func purchasePremium() async {
+        if premiumProduct == nil {
+            await loadProducts()
+        }
+
         guard let product = premiumProduct else {
-            errorMessage = "Purchase product is not available right now."
+            errorMessage = "Premium product is not available right now. Please try again later."
             return
         }
 
@@ -80,7 +103,7 @@ final class PurchaseManager: ObservableObject {
             await refreshPurchasedState()
 
             if !isPremiumUnlocked {
-                errorMessage = "No previous purchase was found."
+                errorMessage = "No previous purchase was found for this Apple ID."
             }
         } catch {
             errorMessage = "Couldn't restore purchases right now."
@@ -89,6 +112,10 @@ final class PurchaseManager: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func clearProductLoadMessage() {
+        productLoadMessage = nil
     }
 
     private func observeTransactionUpdates() -> Task<Void, Never> {

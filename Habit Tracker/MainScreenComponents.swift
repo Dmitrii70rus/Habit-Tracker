@@ -6,25 +6,50 @@ struct MainDateStripView: View {
     let habits: [Habit]
 
     private let calendar = Calendar.current
+    @State private var hasScrolledInitially = false
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(dates, id: \.self) { date in
-                    let activeHabitsForDate = habits.filter { $0.isActive(on: date) }
-                    MainDateCellView(
-                        date: date,
-                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                        hasCompleted: activeHabitsForDate.contains(where: { $0.isCompleted(on: date) }),
-                        hasPlanned: activeHabitsForDate.contains(where: { $0.isPlanned(on: date) }),
-                        isFuture: calendar.compare(date, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending,
-                        onTap: {
-                            selectedDate = calendar.startOfDay(for: date)
-                        }
-                    )
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(dates, id: \.self) { date in
+                        let activeHabitsForDate = habits.filter { $0.isActive(on: date) }
+                        MainDateCellView(
+                            date: date,
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            hasCompleted: activeHabitsForDate.contains(where: { $0.isCompleted(on: date) }),
+                            hasPlanned: activeHabitsForDate.contains(where: { $0.isPlanned(on: date) }),
+                            isFuture: calendar.compare(date, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending,
+                            isToday: calendar.isDateInToday(date),
+                            onTap: {
+                                selectedDate = calendar.startOfDay(for: date)
+                            }
+                        )
+                        .id(calendar.startOfDay(for: date))
+                    }
                 }
+                .padding(.vertical, 2)
             }
-            .padding(.vertical, 2)
+            .onAppear {
+                guard !hasScrolledInitially else { return }
+                hasScrolledInitially = true
+                scrollToSelected(proxy: proxy, animated: false)
+            }
+            .onChange(of: selectedDate) { _, _ in
+                scrollToSelected(proxy: proxy, animated: true)
+            }
+        }
+    }
+
+    private func scrollToSelected(proxy: ScrollViewProxy, animated: Bool) {
+        let action = {
+            proxy.scrollTo(calendar.startOfDay(for: selectedDate), anchor: .center)
+        }
+
+        if animated {
+            withAnimation(.easeInOut(duration: 0.22)) { action() }
+        } else {
+            action()
         }
     }
 }
@@ -35,6 +60,7 @@ private struct MainDateCellView: View {
     let hasCompleted: Bool
     let hasPlanned: Bool
     let isFuture: Bool
+    let isToday: Bool
     let onTap: () -> Void
 
     private var weekday: String { date.formatted(.dateTime.weekday(.narrow)) }
@@ -55,27 +81,25 @@ private struct MainDateCellView: View {
             VStack(spacing: 6) {
                 Text(weekday)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isToday ? .accent : .secondary)
 
                 Image(systemName: iconName)
                     .font(.headline)
                     .foregroundStyle(iconColor)
 
                 Text(dayNumber)
-                    .font(.caption)
+                    .font(.caption.weight(isSelected || isToday ? .semibold : .regular))
                     .foregroundStyle(.primary)
             }
-            .frame(width: 46)
+            .frame(width: 48)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color(.secondarySystemBackground))
             )
             .overlay {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.accentColor, lineWidth: 1)
-                }
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isSelected ? Color.accentColor : (isToday ? Color.accentColor.opacity(0.35) : .clear), lineWidth: isSelected ? 1.3 : 1)
             }
         }
         .buttonStyle(.plain)
@@ -156,7 +180,6 @@ struct EmptyHabitStateView: View {
     }
 }
 
-
 struct WeeklySummaryCardView: View {
     let completed: Int
     let scheduled: Int
@@ -193,7 +216,6 @@ struct WeeklySummaryCardView: View {
         )
     }
 }
-
 
 struct OverallStreakSummaryView: View {
     let currentStreak: Int
