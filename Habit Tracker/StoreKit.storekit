@@ -1,0 +1,38 @@
+{
+  "identifier" : "D95C2D90-5E29-4D95-8DD1-6B353287AB89",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "A9DCEB8E-3E15-478B-8D30-0A0F84A95A0C",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited habits and all premium features.",
+          "displayName" : "Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "habittracker.premium",
+      "referenceName" : "Premium",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "B8790438-0E7F-4D3D-B4A0-43BA2F2A5DA0",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

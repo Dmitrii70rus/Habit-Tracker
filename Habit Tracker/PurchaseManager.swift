@@ -4,7 +4,7 @@ import StoreKit
 
 @MainActor
 final class PurchaseManager: ObservableObject {
-    static let productID = "habittracker.premium.unlock"
+    static let productID = "habittracker.premium"
 
     @Published var isPremiumUnlocked = false
     @Published var premiumProduct: Product?
@@ -51,10 +51,10 @@ final class PurchaseManager: ObservableObject {
             premiumProduct = products.first
 
             if premiumProduct == nil {
-                productLoadMessage = "Premium is unavailable right now. Please try again later or verify your StoreKit test configuration."
+                productLoadMessage = "Premium temporarily unavailable. Debug: No StoreKit product returned for \(Self.productID)."
             }
         } catch {
-            productLoadMessage = "Couldn't load premium options. Check your connection or StoreKit setup and try again."
+            productLoadMessage = "Premium temporarily unavailable. Debug: Couldn't load StoreKit product \(Self.productID)."
         }
     }
 
