@@ -81,7 +81,7 @@ private struct MainDateCellView: View {
             VStack(spacing: 6) {
                 Text(weekday)
                     .font(.caption2)
-                    .foregroundStyle(isToday ? .accent : .secondary)
+                    .foregroundStyle(isToday ? Color.accentColor : .secondary)
 
                 Image(systemName: iconName)
                     .font(.headline)
