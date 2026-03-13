@@ -1,0 +1,72 @@
+"app.name" = "Habit Tracker";
+"action.add_habit" = "Add Habit";
+"action.edit" = "Edit";
+"action.delete" = "Delete";
+"action.cancel" = "Cancel";
+"action.ok" = "OK";
+
+"alert.delete_habit.title" = "Delete habit?";
+"alert.delete_habit.confirm" = "Delete Habit";
+"alert.delete_habit.message" = "This action cannot be undone.";
+"alert.error.title" = "Something went wrong";
+"alert.reminder_permission.title" = "Reminder Permission";
+"alert.purchase.title" = "Purchase";
+
+"sheet.add_habit.title" = "Add Habit";
+"sheet.add_habit.save" = "Save";
+"sheet.edit_habit.title" = "Edit Habit";
+"sheet.edit_habit.save" = "Update";
+
+"empty.no_habits_for_date.title" = "No Habits for This Date";
+"empty.no_habits_for_date.message" = "Habits will appear on or after their start date.";
+
+"empty.habits.title" = "No Habits Yet";
+"empty.habits.message" = "Create your first habit to start building consistency.";
+"empty.habits.button" = "Create Your First Habit";
+
+"paywall.title" = "Premium";
+"paywall.subtitle" = "Free supports up to 3 habits. Upgrade to unlock unlimited habits and premium tools.";
+"paywall.loading_options" = "Loading premium options…";
+"paywall.unavailable.title" = "Premium temporarily unavailable.";
+"paywall.unavailable.message" = "Please try again in a moment.";
+"paywall.try_again" = "Try Again";
+"paywall.loading_purchase" = "Loading purchase options…";
+"paywall.unavailable_cta" = "Premium Unavailable";
+"paywall.restore" = "Restore Purchase";
+"paywall.close" = "Close";
+"paywall.cta.unlock" = "Unlock Premium (%@)";
+"paywall.benefit.unlimited" = "Unlimited habits";
+"paywall.benefit.reminders" = "Smart reminders";
+"paywall.benefit.stats" = "Habit statistics";
+"paywall.benefit.updates" = "All future premium updates";
+
+"reminder.permission_request_failed" = "Could not request notification permission.";
+"reminder.permission_denied" = "Notifications are disabled for Habit Tracker. You can enable them in Settings.";
+"reminder.body.today" = "Time for your habit today.";
+"reminder.schedule_failed" = "Could not schedule reminders for %@.";
+
+"purchase.product.unavailable" = "Premium temporarily unavailable.";
+"purchase.unavailable" = "Premium product is not available right now. Please try again later.";
+"purchase.verify_failed" = "We could not verify this purchase.";
+"purchase.pending" = "Purchase is pending approval.";
+"purchase.failed" = "Purchase failed. Please try again.";
+"purchase.failed.connection" = "Purchase failed. Please check your connection and try again.";
+"purchase.restore.success" = "Purchases restored successfully.";
+"purchase.restore.none" = "No previous purchase was found for this Apple ID.";
+"purchase.restore.failed" = "Could not restore purchases right now.";
+
+"summary.this_week" = "This week";
+"summary.overall_streak" = "Overall Streak";
+"summary.daily_reminder" = "Daily Reminder Summary";
+"summary.planned" = "Planned";
+"summary.done" = "Done";
+"summary.remaining" = "Remaining";
+"summary.progress.completed" = "%d of %d completed";
+"summary.week.completed" = "%d / %d habits completed";
+"summary.streak.current" = "Current: %d day(s)";
+"summary.streak.best" = "Best: %d day(s)";
+"summary.progress.planned" = "%d planned";
+"summary.motivation.future_none" = "Plan one small win ahead.";
+"summary.motivation.future_planned" = "Nice planning. Stay consistent.";
+"summary.motivation.perfect" = "Great job. Keep your streak alive.";
+"summary.motivation.keep_going" = "Small steps every day.";

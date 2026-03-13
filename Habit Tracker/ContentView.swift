@@ -157,9 +157,9 @@ struct ContentView: View {
                         if visibleHabits.isEmpty {
                             Section {
                                 ContentUnavailableView(
-                                    "No Habits for This Date",
+                                    L10n.emptyNoHabitsForDateTitle,
                                     systemImage: "calendar.badge.exclamationmark",
-                                    description: Text("Habits will appear on or after their start date.")
+                                    description: Text(L10n.emptyNoHabitsForDateMessage)
                                 )
                                 .frame(maxWidth: .infinity)
                             }
@@ -188,11 +188,11 @@ struct ContentView: View {
                                     .listRowSeparator(.hidden)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: {
-                                            Label("Delete", systemImage: "trash")
+                                            Label(L10n.delete, systemImage: "trash")
                                         }
 
                                         Button { viewModel.openEditHabitSheet(for: habit) } label: {
-                                            Label("Edit", systemImage: "pencil")
+                                            Label(L10n.editHabit, systemImage: "pencil")
                                         }
                                         .tint(.blue)
                                     }
@@ -205,19 +205,19 @@ struct ContentView: View {
                     .background(Color(.systemGroupedBackground))
                 }
             }
-            .navigationTitle("Habit Tracker")
+            .navigationTitle(L10n.appName)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { handleAddHabitTap() } label: {
-                        Label("Add Habit", systemImage: "plus")
+                        Label(L10n.addHabit, systemImage: "plus")
                     }
                 }
             }
         }
         .sheet(isPresented: $viewModel.isShowingAddSheet) {
             AddHabitView(
-                title: "Add Habit",
-                saveButtonTitle: "Save",
+                title: L10n.addHabitTitle,
+                saveButtonTitle: L10n.addHabitSave,
                 habitTitle: $viewModel.draftHabitTitle,
                 selectedStartOption: $viewModel.selectedStartOption,
                 startDate: $viewModel.draftStartDate,
@@ -241,8 +241,8 @@ struct ContentView: View {
         }
         .sheet(isPresented: $viewModel.isShowingEditSheet) {
             AddHabitView(
-                title: "Edit Habit",
-                saveButtonTitle: "Update",
+                title: L10n.editHabitTitle,
+                saveButtonTitle: L10n.editHabitSave,
                 habitTitle: $viewModel.draftHabitTitle,
                 selectedStartOption: .constant(.startToday),
                 startDate: $viewModel.draftStartDate,
@@ -293,13 +293,13 @@ struct ContentView: View {
                     }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.large])
             .task {
                 await purchaseManager.loadProducts()
             }
         }
         .confirmationDialog(
-            "Delete habit?",
+            L10n.alertDeleteHabitTitle,
             isPresented: Binding(
                 get: { viewModel.habitPendingDelete != nil },
                 set: { isPresented in
@@ -310,14 +310,14 @@ struct ContentView: View {
             ),
             presenting: viewModel.habitPendingDelete
         ) { _ in
-            Button("Delete Habit", role: .destructive) {
+            Button(L10n.alertDeleteHabitButton, role: .destructive) {
                 viewModel.confirmDeleteHabit(in: modelContext)
             }
-            Button("Cancel", role: .cancel) {
+            Button(L10n.cancel, role: .cancel) {
                 viewModel.cancelDeleteHabitRequest()
             }
         } message: { _ in
-            Text("This action cannot be undone.")
+            Text(L10n.alertDeleteHabitMessage)
         }
         .task {
             await purchaseManager.prepare()
@@ -335,25 +335,20 @@ struct ContentView: View {
                 await reminderManager.scheduleRollingReminders(for: habits)
             }
         }
-        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        .alert(L10n.alertGenericErrorTitle, isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button(L10n.ok, role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .alert("Reminder Permission", isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
-            Button("OK", role: .cancel) { reminderManager.clearMessage() }
+        .alert(L10n.alertReminderPermissionTitle, isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
+            Button(L10n.ok, role: .cancel) { reminderManager.clearMessage() }
         } message: {
             Text(reminderManager.permissionDeniedMessage ?? "")
         }
-        .alert("Purchase", isPresented: Binding(get: { purchaseManager.errorMessage != nil }, set: { if !$0 { purchaseManager.clearError() } })) {
-            Button("OK", role: .cancel) { purchaseManager.clearError() }
+        .alert(L10n.alertPurchaseTitle, isPresented: Binding(get: { purchaseManager.errorMessage != nil }, set: { if !$0 { purchaseManager.clearError() } })) {
+            Button(L10n.ok, role: .cancel) { purchaseManager.clearError() }
         } message: {
             Text(purchaseManager.errorMessage ?? "")
-        }
-        .alert("Product Availability", isPresented: Binding(get: { purchaseManager.productLoadMessage != nil && !isShowingPaywall }, set: { if !$0 { purchaseManager.clearProductLoadMessage() } })) {
-            Button("OK", role: .cancel) { purchaseManager.clearProductLoadMessage() }
-        } message: {
-            Text(purchaseManager.productLoadMessage ?? "")
         }
     }
 
