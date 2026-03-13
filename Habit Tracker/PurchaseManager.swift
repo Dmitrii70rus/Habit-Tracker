@@ -4,7 +4,8 @@ import StoreKit
 
 @MainActor
 final class PurchaseManager: ObservableObject {
-    static let productID = "habittracker.premium"
+    static let primaryProductID = "habittracker.premium.unlock"
+    static let fallbackProductID = "habittracker.premium"
 
     @Published var isPremiumUnlocked = false
     @Published var premiumProduct: Product?
@@ -19,6 +20,10 @@ final class PurchaseManager: ObservableObject {
 
     var isProductReady: Bool {
         premiumProduct != nil
+    }
+
+    private var supportedProductIDs: [String] {
+        [Self.primaryProductID, Self.fallbackProductID]
     }
 
     init() {
@@ -47,14 +52,20 @@ final class PurchaseManager: ObservableObject {
         }
 
         do {
-            let products = try await Product.products(for: [Self.productID])
-            premiumProduct = products.first
+            let products = try await Product.products(for: supportedProductIDs)
+            premiumProduct = products.first { $0.id == Self.primaryProductID } ?? products.first
 
             if premiumProduct == nil {
-                productLoadMessage = "Premium temporarily unavailable. Debug: No StoreKit product returned for \(Self.productID)."
+                productLoadMessage = "Premium temporarily unavailable."
+#if DEBUG
+                print("[StoreKit] No products returned for IDs: \(supportedProductIDs.joined(separator: ", "))")
+#endif
             }
         } catch {
-            productLoadMessage = "Premium temporarily unavailable. Debug: Couldn't load StoreKit product \(Self.productID)."
+            productLoadMessage = "Premium temporarily unavailable."
+#if DEBUG
+            print("[StoreKit] Product load failed for IDs: \(supportedProductIDs.joined(separator: ", ")). Error: \(error)")
+#endif
         }
     }
 
@@ -126,7 +137,7 @@ final class PurchaseManager: ObservableObject {
             for await update in Transaction.updates {
                 switch update {
                 case .verified(let transaction):
-                    if transaction.productID == Self.productID {
+                    if supportedProductIDs.contains(transaction.productID) {
                         await unlockPremium()
                     }
                     await transaction.finish()
@@ -142,7 +153,7 @@ final class PurchaseManager: ObservableObject {
 
         for await entitlement in Transaction.currentEntitlements {
             if case .verified(let transaction) = entitlement,
-               transaction.productID == Self.productID {
+               supportedProductIDs.contains(transaction.productID) {
                 isUnlocked = true
                 break
             }

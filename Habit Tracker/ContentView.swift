@@ -350,11 +350,6 @@ struct ContentView: View {
         } message: {
             Text(purchaseManager.errorMessage ?? "")
         }
-        .alert("Product Availability", isPresented: Binding(get: { purchaseManager.productLoadMessage != nil && !isShowingPaywall }, set: { if !$0 { purchaseManager.clearProductLoadMessage() } })) {
-            Button("OK", role: .cancel) { purchaseManager.clearProductLoadMessage() }
-        } message: {
-            Text(purchaseManager.productLoadMessage ?? "")
-        }
     }
 
     private func persistSharedSnapshot() {

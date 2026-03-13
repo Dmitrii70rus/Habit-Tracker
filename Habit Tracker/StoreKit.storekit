@@ -15,7 +15,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "habittracker.premium",
+      "productID" : "habittracker.premium.unlock",
       "referenceName" : "Premium",
       "type" : "NonConsumable"
     }
