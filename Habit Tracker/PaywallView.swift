@@ -76,10 +76,11 @@ struct PaywallView: View {
                         Spacer()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isProcessing || isLoadingProduct || !isPurchaseAvailable)
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                Button("Restore Purchase", action: onRestore)
+                Button("Try Again", action: onRetryLoad)
                     .buttonStyle(.bordered)
                     .disabled(isProcessing)
 
@@ -92,6 +93,7 @@ struct PaywallView: View {
             .padding()
             .frame(maxWidth: .infinity)
         }
+        .padding()
     }
 
     private func featureRow(_ text: String) -> some View {
