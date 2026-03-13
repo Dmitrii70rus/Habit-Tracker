@@ -155,14 +155,18 @@ struct HabitDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Weekly Progress") {
+            Section {
                 WeeklyProgressView(dates: analytics.weeklyDates, states: analytics.weeklyStates)
+            } header: {
+                Text("Weekly Progress")
             } footer: {
                 Text("✓ completed • ✗ missed • — not scheduled")
             }
 
-            Section("Last 9 Weeks") {
+            Section {
                 HabitHeatmapView(states: analytics.heatmapStates)
+            } header: {
+                Text("Last 9 Weeks")
             } footer: {
                 Text("Gray: not scheduled • Blue: planned/not completed • Green: completed")
             }
