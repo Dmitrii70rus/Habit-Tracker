@@ -101,7 +101,7 @@ struct PaywallView: View {
                     .disabled(true)
                 }
 
-                Button("Restore Purchase", action: onRestore)
+                Button("Try Again", action: onRetryLoad)
                     .buttonStyle(.bordered)
                     .disabled(isProcessing)
 
@@ -114,6 +114,7 @@ struct PaywallView: View {
             .padding()
             .frame(maxWidth: .infinity)
         }
+        .padding()
     }
 
     private func featureRow(_ text: String) -> some View {
