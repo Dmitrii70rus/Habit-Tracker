@@ -321,16 +321,15 @@ struct ContentView: View {
             viewModel.closeAddHabitSheet()
             isShowingPaywall = true
         }
-        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
-        } message: {
-            Text(viewModel.errorMessage ?? "")
-        }
         .alert("Reminder Permission", isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
             Button("OK", role: .cancel) { reminderManager.clearMessage() }
         } message: {
             Text(reminderManager.permissionDeniedMessage ?? "")
         }
+    }
+
+    private func canCreateHabit() -> Bool {
+        purchaseManager.isPremiumUnlocked || habits.count < freeHabitLimit
     }
 
     private func canCreateHabit() -> Bool {
