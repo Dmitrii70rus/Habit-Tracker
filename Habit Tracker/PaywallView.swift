@@ -114,6 +114,7 @@ struct PaywallView: View {
             .padding()
             .frame(maxWidth: .infinity)
         }
+        .padding()
     }
 
     private func featureRow(_ text: String) -> some View {
