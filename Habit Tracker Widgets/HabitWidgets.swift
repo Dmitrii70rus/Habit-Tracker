@@ -29,14 +29,16 @@ struct HabitSmallWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Today")
+            Text(String(localized: "widget.today"))
+                .textCase(nil)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text("\(entry.snapshot.completedHabits) / \(entry.snapshot.totalActiveHabits) done")
+            Text(String(format: String(localized: "widget.done_summary"), entry.snapshot.completedHabits, entry.snapshot.totalActiveHabits))
                 .font(.headline)
+                .lineLimit(2)
 
-            Text("Streak: \(entry.snapshot.overallCurrentStreak)d")
+            Text(String(format: String(localized: "widget.streak"), entry.snapshot.overallCurrentStreak))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -53,7 +55,7 @@ struct HabitMediumWidgetView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text("\(entry.snapshot.completedHabits) of \(entry.snapshot.totalActiveHabits) completed")
+            Text(String(format: String(localized: "widget.medium.completed"), entry.snapshot.completedHabits, entry.snapshot.totalActiveHabits))
                 .font(.headline)
 
             ForEach(Array(entry.snapshot.habits.prefix(5).enumerated()), id: \.offset) { _, item in
@@ -79,8 +81,8 @@ struct HabitSmallWidget: Widget {
         StaticConfiguration(kind: kind, provider: HabitWidgetProvider()) { entry in
             HabitSmallWidgetView(entry: entry)
         }
-        .configurationDisplayName("Habit Progress")
-        .description("Shows today's habit completion progress.")
+        .configurationDisplayName(String(localized: "widget.small.name"))
+        .description(String(localized: "widget.small.description"))
         .supportedFamilies([.systemSmall])
     }
 }
@@ -92,8 +94,8 @@ struct HabitMediumWidget: Widget {
         StaticConfiguration(kind: kind, provider: HabitWidgetProvider()) { entry in
             HabitMediumWidgetView(entry: entry)
         }
-        .configurationDisplayName("Habit Summary")
-        .description("Shows today's summary and top habits.")
+        .configurationDisplayName(String(localized: "widget.medium.name"))
+        .description(String(localized: "widget.medium.description"))
         .supportedFamilies([.systemMedium])
     }
 }

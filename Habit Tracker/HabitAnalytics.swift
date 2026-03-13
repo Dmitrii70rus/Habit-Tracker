@@ -21,14 +21,14 @@ struct HabitAnalyticsSnapshot {
 
     var motivationalMessage: String {
         if completionRate >= 0.85 {
-            return "Great job — keep the streak alive!"
+            return L10n.analyticsGreat
         }
 
         if completionRate >= 0.6 {
-            return "You're building consistency."
+            return L10n.analyticsConsistent
         }
 
-        return "Almost there — one more habit today!"
+        return L10n.analyticsAlmost
     }
 }
 

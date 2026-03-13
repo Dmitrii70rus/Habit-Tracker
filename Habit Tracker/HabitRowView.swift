@@ -23,8 +23,8 @@ struct HabitRowView: View {
                     .font(.headline)
 
                 HStack(spacing: 12) {
-                    Text("Current streak: \(dayText(for: habit.currentStreak))")
-                    Text("Best streak: \(dayText(for: habit.bestStreak))")
+                    Text(L10n.streakCurrent(habit.currentStreak))
+                    Text(L10n.streakBest(habit.bestStreak))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -57,12 +57,12 @@ struct HabitRowView: View {
     private var statusText: String {
         if isFutureDate {
             if habit.recurrenceType == .none {
-                return habit.isPlanned(on: selectedDate) ? "Planned for this day" : "No plan for this day"
+                return habit.isPlanned(on: selectedDate) ? L10n.rowPlannedForDay : L10n.rowNoPlanForDay
             }
-            return habit.isPlanned(on: selectedDate) ? "Planned by recurrence" : "Not scheduled"
+            return habit.isPlanned(on: selectedDate) ? L10n.rowPlannedByRecurrence : L10n.rowNotScheduled
         }
 
-        return habit.isCompleted(on: selectedDate) ? "Completed" : "Not completed"
+        return habit.isCompleted(on: selectedDate) ? L10n.statusCompleted : L10n.statusNotCompleted
     }
 
     private var statusIcon: String {
@@ -89,14 +89,14 @@ struct HabitRowView: View {
 
     private var actionLabel: String {
         if !isActionEnabled {
-            return "Planned automatically by recurrence"
+            return L10n.rowPlannedAutomatically
         }
 
         if isFutureDate {
-            return habit.isPlanned(on: selectedDate) ? "Remove planned day" : "Mark as planned"
+            return habit.isPlanned(on: selectedDate) ? L10n.rowRemovePlannedDay : L10n.actionMarkPlanned
         }
 
-        return habit.isCompleted(on: selectedDate) ? "Unmark complete" : "Mark as complete"
+        return habit.isCompleted(on: selectedDate) ? L10n.actionUnmarkComplete : L10n.actionMarkComplete
     }
 
     private var accentColor: Color {
@@ -111,7 +111,7 @@ struct HabitRowView: View {
     }
 
     private func dayText(for value: Int) -> String {
-        value == 1 ? "1 day" : "\(value) days"
+        L10n.dayCount(value)
     }
 }
 

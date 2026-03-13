@@ -20,11 +20,11 @@ final class ReminderManager: ObservableObject {
             do {
                 return try await center.requestAuthorization(options: [.alert, .badge, .sound])
             } catch {
-                setPermissionMessageIfNeeded("Couldn't request notification permission.")
+                setPermissionMessageIfNeeded(L10n.reminderPermissionRequestFailed)
                 return false
             }
         case .denied:
-            setPermissionMessageIfNeeded("Notifications are disabled for Habit Tracker. You can enable them in Settings.")
+            setPermissionMessageIfNeeded(L10n.reminderPermissionDenied)
             return false
         @unknown default:
             return false
@@ -74,7 +74,7 @@ final class ReminderManager: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = habit.title
-        content.body = "Time for your habit today."
+        content.body = L10n.reminderBodyToday
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: dayComponents, repeats: false)
@@ -86,7 +86,7 @@ final class ReminderManager: ObservableObject {
         do {
             try await center.add(request)
         } catch {
-            setPermissionMessageIfNeeded("Couldn't schedule reminders for \(habit.title).")
+            setPermissionMessageIfNeeded(L10n.reminderScheduleFailed(habit.title))
         }
     }
 

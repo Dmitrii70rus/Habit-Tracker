@@ -1,0 +1,173 @@
+"app.name" = "Habit Tracker";
+
+"action.add_habit" = "Add Habit";
+"action.edit" = "Edit";
+"action.delete" = "Delete";
+"action.cancel" = "Cancel";
+"action.ok" = "OK";
+"action.remove_plan" = "Remove Plan";
+"action.mark_planned" = "Mark as Planned";
+"action.unmark_complete" = "Unmark Complete";
+"action.mark_complete" = "Mark as Complete";
+
+"alert.delete_habit.title" = "Delete habit?";
+"alert.delete_habit.confirm" = "Delete Habit";
+"alert.delete_habit.message" = "This action cannot be undone.";
+"alert.error.title" = "Something went wrong";
+"alert.reminder_permission.title" = "Reminder Permission";
+"alert.purchase.title" = "Purchase";
+
+"sheet.add_habit.title" = "Add Habit";
+"sheet.add_habit.save" = "Save";
+"sheet.edit_habit.title" = "Edit Habit";
+"sheet.edit_habit.save" = "Update";
+
+"form.habit.section" = "Habit";
+"form.habit.placeholder" = "e.g. Drink Water";
+"form.start_date" = "Start date";
+"form.quick_start" = "Quick Start";
+"form.start" = "Start";
+"form.selected_date" = "Selected date: %@";
+"form.recurrence.section" = "Recurrence";
+"form.repeats" = "Repeats";
+"form.reminders.section" = "Reminders";
+"form.reminders.enable" = "Enable reminder";
+"form.reminders.time" = "Time";
+"form.custom_days" = "Custom days";
+
+"start_option.today" = "Start Today";
+"start_option.selected_date" = "Plan for Selected Date";
+
+"empty.no_habits_for_date.title" = "No Habits for This Date";
+"empty.no_habits_for_date.message" = "Habits will appear on or after their start date.";
+"empty.habits.title" = "No Habits Yet";
+"empty.habits.message" = "Create your first habit to start building consistency.";
+"empty.habits.button" = "Create Your First Habit";
+"empty.history.title" = "No history yet";
+"empty.history.message" = "Complete this habit to start building a streak.";
+
+"paywall.title" = "Premium";
+"paywall.subtitle" = "Free supports up to 3 habits. Upgrade to unlock unlimited habits and premium tools.";
+"paywall.loading_options" = "Loading premium options…";
+"paywall.unavailable.title" = "Premium temporarily unavailable.";
+"paywall.unavailable.message" = "Please try again in a moment.";
+"paywall.try_again" = "Try Again";
+"paywall.loading_purchase" = "Loading purchase options…";
+"paywall.unavailable_cta" = "Premium Unavailable";
+"paywall.restore" = "Restore Purchase";
+"paywall.close" = "Close";
+"paywall.cta.unlock" = "Unlock Premium (%@)";
+"paywall.benefit.unlimited" = "Unlimited habits";
+"paywall.benefit.reminders" = "Smart reminders";
+"paywall.benefit.stats" = "Habit statistics";
+"paywall.benefit.updates" = "All future premium updates";
+
+"detail.title" = "Habit Details";
+"detail.choose_date" = "Choose Date";
+"detail.choose_date.hint" = "Review the last 7 days, today, and the next 7 days.";
+"detail.selected_day" = "Selected Day";
+"detail.stats" = "Statistics";
+"detail.weekly_progress" = "Weekly Progress";
+"detail.weekly_legend" = "✓ completed • ✗ missed • — not scheduled";
+"detail.heatmap.title" = "Last 9 Weeks";
+"detail.heatmap.legend" = "Gray: not scheduled • Blue: planned/not completed • Green: completed";
+"detail.planned_from_recurrence" = "Planned automatically from recurrence.";
+"detail.actions_before_start" = "Actions are disabled before the habit start date.";
+"detail.future_rule_message" = "Future planned state comes from the recurrence rule.";
+"detail.past_rule_message" = "Past and current dates can be marked complete or not complete.";
+"detail.starts_on" = "Starts: %@";
+"detail.repeats" = "Repeats: %@";
+"detail.reminder" = "Reminder: %@";
+"detail.habit_starts_on" = "This habit starts on %@.";
+
+"detail.status.starts_on" = "This habit starts on %@.";
+"detail.status.completed_subtitle" = "Great job — this day counts toward your streak.";
+"detail.status.planned_subtitle" = "Planned day from recurrence.";
+"detail.status.missed_subtitle" = "You can still review and update this day.";
+"detail.status.none_subtitle" = "No status set for this day yet.";
+
+"status.not_active" = "Not active yet";
+"status.completed" = "Completed";
+"status.planned" = "Planned";
+"status.not_completed" = "Not completed";
+"status.no_plan" = "No plan";
+
+"row.planned_for_day" = "Planned for this day";
+"row.no_plan_for_day" = "No plan for this day";
+"row.planned_by_recurrence" = "Planned by recurrence";
+"row.not_scheduled" = "Not scheduled";
+"row.planned_automatically" = "Planned automatically by recurrence";
+"row.remove_planned_day" = "Remove planned day";
+
+"reminder.permission_request_failed" = "Could not request notification permission.";
+"reminder.permission_denied" = "Notifications are disabled for Habit Tracker. You can enable them in Settings.";
+"reminder.body.today" = "Time for your habit today.";
+"reminder.schedule_failed" = "Could not schedule reminders for %@.";
+
+"purchase.product.unavailable" = "Premium temporarily unavailable.";
+"purchase.unavailable" = "Premium product is not available right now. Please try again later.";
+"purchase.verify_failed" = "We could not verify this purchase.";
+"purchase.pending" = "Purchase is pending approval.";
+"purchase.failed" = "Purchase failed. Please try again.";
+"purchase.failed.connection" = "Purchase failed. Please check your connection and try again.";
+"purchase.restore.success" = "Purchases restored successfully.";
+"purchase.restore.none" = "No previous purchase was found for this Apple ID.";
+"purchase.restore.failed" = "Could not restore purchases right now.";
+
+"summary.this_week" = "This week";
+"summary.overall_streak" = "Overall Streak";
+"summary.daily_reminder" = "Daily Reminder Summary";
+"summary.planned" = "Planned";
+"summary.done" = "Done";
+"summary.remaining" = "Remaining";
+"summary.progress.completed" = "%d of %d completed";
+"summary.week.completed" = "%d / %d habits completed";
+"summary.streak.current" = "Current: %d day(s)";
+"summary.streak.best" = "Best: %d day(s)";
+"summary.progress.planned" = "%d planned";
+"summary.motivation.future_none" = "Plan one small win ahead.";
+"summary.motivation.future_planned" = "Nice planning. Stay consistent.";
+"summary.motivation.perfect" = "Great job. Keep your streak alive.";
+"summary.motivation.keep_going" = "Small steps every day.";
+
+"stat.current_streak" = "Current streak";
+"stat.best_streak" = "Best streak";
+"stat.completion_rate" = "Completion rate";
+"stat.total_completions" = "Total completions";
+"stat.scheduled_days" = "Scheduled days";
+"stat.days_value" = "%d days";
+
+"analytics.motivation.great" = "Great job — keep the streak alive!";
+"analytics.motivation.consistent" = "You're building consistency.";
+"analytics.motivation.almost" = "Almost there — one more habit today!";
+
+"recurrence.one_time" = "One-time";
+"recurrence.daily" = "Every day";
+"recurrence.weekdays" = "Weekdays";
+"recurrence.weekends" = "Weekends";
+"recurrence.custom" = "Custom weekdays";
+
+"error.habit_name_empty" = "Habit name can't be empty.";
+"error.save_habit" = "Couldn't save your habit. Please try again.";
+"error.save_changes" = "Couldn't save your changes. Please try again.";
+"error.refresh_streaks" = "Couldn't refresh streaks. Please try again.";
+"error.update_completion" = "Couldn't update completion. Please try again.";
+"error.update_history" = "Couldn't update history. Please try again.";
+"error.update_plan" = "Couldn't update plan. Please try again.";
+"error.delete_habit" = "Couldn't delete habit. Please try again.";
+
+"time.days" = "%d day(s)";
+
+"widget.today" = "Today";
+"widget.done_summary" = "%d / %d done";
+"widget.streak" = "Streak: %dd";
+"widget.medium.completed" = "%d of %d completed";
+"widget.small.name" = "Habit Progress";
+"widget.small.description" = "Shows today's habit completion progress.";
+"widget.medium.name" = "Habit Summary";
+"widget.medium.description" = "Shows today's summary and top habits.";
+
+"time.today" = "Today";
+"time.yesterday" = "Yesterday";
+"time.tomorrow" = "Tomorrow";
+"analytics.week.none" = "No scheduled habits this week yet.";

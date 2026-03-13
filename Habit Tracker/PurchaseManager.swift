@@ -1,10 +1,14 @@
 import Foundation
 import Combine
 import StoreKit
+#if DEBUG && canImport(StoreKitTest)
+import StoreKitTest
+#endif
 
 @MainActor
 final class PurchaseManager: ObservableObject {
-    static let productID = "habittracker.premium.unlock"
+    static let primaryProductID = "habittracker.premium.unlock"
+    static let fallbackProductID = "habittracker.premium"
 
     @Published var isPremiumUnlocked = false
     @Published var premiumProduct: Product?
@@ -16,13 +20,23 @@ final class PurchaseManager: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let premiumKey = "habittracker.premium.unlocked"
     private var updatesTask: Task<Void, Never>?
+#if DEBUG && canImport(StoreKitTest)
+    private var storeKitTestSession: SKTestSession?
+#endif
 
     var isProductReady: Bool {
         premiumProduct != nil
     }
 
+    private var supportedProductIDs: [String] {
+        [Self.primaryProductID, Self.fallbackProductID]
+    }
+
     init() {
         isPremiumUnlocked = userDefaults.bool(forKey: premiumKey)
+#if DEBUG && canImport(StoreKitTest)
+        configureStoreKitTestSessionIfAvailable()
+#endif
         updatesTask = observeTransactionUpdates()
     }
 
@@ -47,14 +61,20 @@ final class PurchaseManager: ObservableObject {
         }
 
         do {
-            let products = try await Product.products(for: [Self.productID])
-            premiumProduct = products.first
+            let products = try await Product.products(for: supportedProductIDs)
+            premiumProduct = products.first { $0.id == Self.primaryProductID } ?? products.first
 
             if premiumProduct == nil {
-                productLoadMessage = "Premium is unavailable right now. Please try again later or verify your StoreKit test configuration."
+                productLoadMessage = L10n.purchaseProductUnavailable
+#if DEBUG
+                print("[StoreKit] No products returned for IDs: \(supportedProductIDs.joined(separator: ", "))")
+#endif
             }
         } catch {
-            productLoadMessage = "Couldn't load premium options. Check your connection or StoreKit setup and try again."
+            productLoadMessage = L10n.purchaseProductUnavailable
+#if DEBUG
+            print("[StoreKit] Product load failed for IDs: \(supportedProductIDs.joined(separator: ", ")). Error: \(error)")
+#endif
         }
     }
 
@@ -64,7 +84,7 @@ final class PurchaseManager: ObservableObject {
         }
 
         guard let product = premiumProduct else {
-            errorMessage = "Premium product is not available right now. Please try again later."
+            errorMessage = L10n.purchaseUnavailable
             return
         }
 
@@ -81,17 +101,17 @@ final class PurchaseManager: ObservableObject {
                     await unlockPremium()
                     await transaction.finish()
                 case .unverified:
-                    errorMessage = "We couldn't verify this purchase."
+                    errorMessage = L10n.purchaseVerifyFailed
                 }
             case .userCancelled:
                 break
             case .pending:
-                errorMessage = "Purchase is pending approval."
+                errorMessage = L10n.purchasePending
             @unknown default:
-                errorMessage = "Purchase failed. Please try again."
+                errorMessage = L10n.purchaseFailed
             }
         } catch {
-            errorMessage = "Purchase failed. Please check your connection and try again."
+            errorMessage = L10n.purchaseFailedConnection
         }
     }
 
@@ -104,12 +124,12 @@ final class PurchaseManager: ObservableObject {
             await refreshPurchasedState()
 
             if isPremiumUnlocked {
-                errorMessage = "Purchases restored successfully."
+                errorMessage = L10n.purchaseRestoreSuccess
             } else {
-                errorMessage = "No previous purchase was found for this Apple ID."
+                errorMessage = L10n.purchaseRestoreNone
             }
         } catch {
-            errorMessage = "Couldn't restore purchases right now."
+            errorMessage = L10n.purchaseRestoreFailed
         }
     }
 
@@ -121,12 +141,27 @@ final class PurchaseManager: ObservableObject {
         productLoadMessage = nil
     }
 
+#if DEBUG && canImport(StoreKitTest)
+    private func configureStoreKitTestSessionIfAvailable() {
+        do {
+            let session = try SKTestSession(configurationFileNamed: "StoreKit.storekit")
+            session.disableDialogs = false
+            session.askToBuyEnabled = false
+            try session.resetToDefaultState()
+            storeKitTestSession = session
+            print("[StoreKit] DEBUG test session initialized from StoreKit.storekit")
+        } catch {
+            print("[StoreKit] DEBUG test session initialization failed: \(error)")
+        }
+    }
+#endif
+
     private func observeTransactionUpdates() -> Task<Void, Never> {
         Task {
             for await update in Transaction.updates {
                 switch update {
                 case .verified(let transaction):
-                    if transaction.productID == Self.productID {
+                    if supportedProductIDs.contains(transaction.productID) {
                         await unlockPremium()
                     }
                     await transaction.finish()
@@ -142,7 +177,7 @@ final class PurchaseManager: ObservableObject {
 
         for await entitlement in Transaction.currentEntitlements {
             if case .verified(let transaction) = entitlement,
-               transaction.productID == Self.productID {
+               supportedProductIDs.contains(transaction.productID) {
                 isUnlocked = true
                 break
             }

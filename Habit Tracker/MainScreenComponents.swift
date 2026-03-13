@@ -115,14 +115,14 @@ struct ProgressSummaryCardView: View {
     let isFutureDate: Bool
 
     private var percentageText: String { "\(Int(progressRatio * 100))%" }
-    private var titleText: String { isFutureDate ? "\(plannedCount) planned" : "\(completedCount) of \(totalCount) completed" }
+    private var titleText: String { isFutureDate ? L10n.progressPlanned(plannedCount) : L10n.habitsCompleted(completedCount, totalCount) }
 
     private var motivationalText: String {
         if isFutureDate {
-            return plannedCount == 0 ? "Plan one small win ahead." : "Nice planning. Stay consistent."
+            return plannedCount == 0 ? L10n.motivationFutureNone : L10n.motivationFuturePlanned
         }
 
-        return completedCount == totalCount ? "Great job. Keep your streak alive." : "Small steps every day."
+        return completedCount == totalCount ? L10n.motivationPerfectDay : L10n.motivationKeepGoing
     }
 
     var body: some View {
@@ -158,16 +158,16 @@ struct EmptyHabitStateView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.tint)
 
-            Text("No Habits Yet")
+            Text(L10n.emptyHabitsTitle)
                 .font(.title3.weight(.semibold))
 
-            Text("Create your first habit to start building consistency.")
+            Text(L10n.emptyHabitsMessage)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             Button(action: onAddHabit) {
-                Label("Create Your First Habit", systemImage: "plus")
+                Label(L10n.emptyHabitsButton, systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -195,11 +195,11 @@ struct WeeklySummaryCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("This week")
+            Text(L10n.summaryThisWeek)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text("\(completed) / \(scheduled) habits completed")
+            Text(L10n.habitsCompletedWeek(completed, scheduled))
                 .font(.headline)
 
             ProgressView(value: ratio)
@@ -224,12 +224,12 @@ struct OverallStreakSummaryView: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Overall Streak")
+                Text(L10n.summaryOverallStreak)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("Current: \(currentStreak) day\(currentStreak == 1 ? "" : "s")")
+                Text(L10n.streakCurrent(currentStreak))
                     .font(.headline)
-                Text("Best: \(bestStreak) day\(bestStreak == 1 ? "" : "s")")
+                Text(L10n.streakBest(bestStreak))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -255,14 +255,14 @@ struct DailyReminderSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Daily Reminder Summary")
+            Text(L10n.summaryDailyReminder)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             HStack {
-                summaryPill(title: "Planned", value: plannedCount, color: .blue)
-                summaryPill(title: "Done", value: completedCount, color: .green)
-                summaryPill(title: "Remaining", value: remainingCount, color: .orange)
+                summaryPill(title: L10n.summaryPlanned, value: plannedCount, color: .blue)
+                summaryPill(title: L10n.summaryDone, value: completedCount, color: .green)
+                summaryPill(title: L10n.summaryRemaining, value: remainingCount, color: .orange)
             }
         }
         .padding(16)
