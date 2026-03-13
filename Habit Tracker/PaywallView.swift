@@ -13,140 +13,87 @@ struct PaywallView: View {
     let onRestore: () -> Void
     let onRetryLoad: () -> Void
 
-    private var unavailableMessage: String {
-        "Premium is currently unavailable."
-    }
-
-    private var unavailableDetail: String {
-        if let productLoadMessage, !productLoadMessage.isEmpty {
-            return "Try again in a moment. Check StoreKit test configuration in local testing."
-        }
-
-        return "Try again in a moment."
+    private var hasProductIssue: Bool {
+        productLoadMessage != nil || !isPurchaseAvailable
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Unlock Unlimited Habits")
-                        .font(.title2.weight(.bold))
+        VStack(spacing: 16) {
+            Text("Premium")
+                .font(.title.bold())
+                .multilineTextAlignment(.center)
 
-                    Text("The free version supports up to 3 habits. Upgrade to track as many habits as you want.")
-                        .font(.subheadline)
+            Text("The free version supports up to 3 habits. Upgrade to track as many habits as you want.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 12) {
+                featureRow("Unlimited habits")
+                featureRow("Smart reminders")
+                featureRow("Habit statistics")
+                featureRow("All future premium updates")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            if isLoadingProduct {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Loading premium options…")
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    benefitRow("Unlimited habits")
-                    benefitRow("Smart reminders")
-                    benefitRow("Habit statistics")
-                    benefitRow("All future premium updates")
+            } else if hasProductIssue {
+                VStack(spacing: 6) {
+                    Text("Premium temporarily unavailable.")
+                        .font(.footnote.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                    Text("Check StoreKit test configuration in local testing.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                if isLoadingProduct {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Loading premium price…")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                } else if let productLoadMessage {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(unavailableMessage)
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.primary)
-                        Text(unavailableDetail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
+                Button("Try Again", action: onRetryLoad)
+                    .buttonStyle(.bordered)
+            }
 
-                Spacer()
-
-                VStack(spacing: 12) {
+            Button(action: onPurchase) {
+                HStack {
+                    Spacer()
                     if isLoadingProduct {
-                        Button(action: {}) {
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                Text("Preparing purchase options…")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(true)
-                    } else if isPurchaseAvailable {
-                        Button(action: onPurchase) {
-                            HStack {
-                                Spacer()
-                                Text("Unlock Premium (\(displayPrice))")
-                                    .fontWeight(.semibold)
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isProcessing)
-                    } else {
-                        Button(action: {}) {
-                            HStack {
-                                Spacer()
-                                Label("Premium Unavailable", systemImage: "exclamationmark.triangle")
-                                    .fontWeight(.semibold)
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.secondary)
-                        .disabled(true)
-
-                        Button("Try Again", action: onRetryLoad)
-                            .buttonStyle(.bordered)
+                        ProgressView()
                     }
-
-                    Button("Restore Purchase", action: onRestore)
-                        .buttonStyle(.bordered)
-                        .disabled(isProcessing)
-
-                    Button("Not now") {
-                        dismiss()
-                    }
-                    .buttonStyle(.plain)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
+                    Text(isPurchaseAvailable ? "Unlock Premium (\(displayPrice))" : "Premium Unavailable")
+                        .fontWeight(.semibold)
+                    Spacer()
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
-            .navigationTitle("Premium")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
+            .buttonStyle(.borderedProminent)
+            .disabled(isProcessing || isLoadingProduct || !isPurchaseAvailable)
+
+            Button("Restore Purchase", action: onRestore)
+                .buttonStyle(.bordered)
+                .disabled(isProcessing)
+
+            Button("Close") {
+                dismiss()
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
         }
+        .padding()
     }
 
-    private func benefitRow(_ text: String) -> some View {
-        Label(text, systemImage: "checkmark.circle.fill")
+    private func featureRow(_ text: String) -> some View {
+        Label(text, systemImage: "checkmark")
             .font(.subheadline.weight(.medium))
-            .foregroundStyle(.primary)
     }
 }
 
