@@ -1,61 +1,372 @@
-//
-//  ContentView.swift
-//  Habit Tracker
-//
-//  Created by Dmitry Tkachev on 12.03.2026.
-//
-
 import SwiftUI
 import SwiftData
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query(sort: [SortDescriptor(\Habit.createdAt, order: .forward)]) private var habits: [Habit]
+    @StateObject private var viewModel = HabitListViewModel()
+    @StateObject private var reminderManager = ReminderManager()
+    @StateObject private var purchaseManager = PurchaseManager()
+
+    @State private var selectedDate = Calendar.current.startOfDay(for: .now)
+    @State private var isShowingPaywall = false
+
+    private let calendar = Calendar.current
+    private let freeHabitLimit = 3
+
+    private var dateRange: [Date] {
+        (-7...7).compactMap { calendar.date(byAdding: .day, value: $0, to: .now) }
+    }
+
+    private var visibleHabits: [Habit] {
+        habits.filter { $0.isActive(on: selectedDate) }
+    }
+
+    private var isFutureSelection: Bool {
+        calendar.compare(selectedDate, to: calendar.startOfDay(for: .now), toGranularity: .day) == .orderedDescending
+    }
+
+    private var completedCountForSelectedDate: Int {
+        visibleHabits.filter { $0.isCompleted(on: selectedDate) }.count
+    }
+
+    private var plannedCountForSelectedDate: Int {
+        visibleHabits.filter { $0.isPlanned(on: selectedDate) }.count
+    }
+
+    private var progressRatio: Double {
+        guard !visibleHabits.isEmpty else { return 0 }
+        let current = isFutureSelection ? plannedCountForSelectedDate : completedCountForSelectedDate
+        return Double(current) / Double(visibleHabits.count)
+    }
+
+    private var thisWeekSummary: (completed: Int, scheduled: Int) {
+        HabitAnalyticsCalculator.weeklySummary(for: habits, calendar: calendar)
+    }
+
+    private var weeklyCompletionRatio: Double {
+        guard thisWeekSummary.scheduled > 0 else { return 0 }
+        return Double(thisWeekSummary.completed) / Double(thisWeekSummary.scheduled)
+    }
+
+    private var weeklyMotivationText: String {
+        if thisWeekSummary.scheduled == 0 {
+            return "No scheduled habits this week yet."
+        }
+
+        if weeklyCompletionRatio >= 0.8 {
+            return "Great job — keep the streak alive!"
+        }
+
+        if weeklyCompletionRatio >= 0.5 {
+            return "You're building consistency."
+        }
+
+        return "Almost there — one more habit today!"
+    }
+
+
+    private var todaySnapshot: SharedHabitSnapshot {
+        SharedHabitSnapshotBuilder.build(from: habits, referenceDate: .now, calendar: calendar)
+    }
+
+    private var selectedDateTitle: String {
+        if calendar.isDateInToday(selectedDate) { return "Today" }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now), calendar.isDate(selectedDate, inSameDayAs: tomorrow) { return "Tomorrow" }
+        return selectedDate.formatted(.dateTime.weekday(.wide).month().day())
+    }
+
+    private var premiumDisplayPrice: String {
+        purchaseManager.premiumProduct?.displayPrice ?? "$4.99"
+    }
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        NavigationStack {
+            Group {
+                if habits.isEmpty {
+                    EmptyHabitStateView { handleAddHabitTap() }
+                } else {
+                    List {
+                        Section {
+                            MainDateStripView(dates: dateRange, selectedDate: $selectedDate, habits: habits)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                                .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            ProgressSummaryCardView(
+                                selectedDateTitle: selectedDateTitle,
+                                completedCount: completedCountForSelectedDate,
+                                plannedCount: plannedCountForSelectedDate,
+                                totalCount: visibleHabits.count,
+                                progressRatio: progressRatio,
+                                isFutureDate: isFutureSelection
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            WeeklySummaryCardView(
+                                completed: thisWeekSummary.completed,
+                                scheduled: thisWeekSummary.scheduled
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+
+                            Text(weeklyMotivationText)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                                .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            OverallStreakSummaryView(
+                                currentStreak: todaySnapshot.overallCurrentStreak,
+                                bestStreak: todaySnapshot.overallBestStreak
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                        }
+
+                        Section {
+                            DailyReminderSummaryView(
+                                plannedCount: todaySnapshot.plannedHabits,
+                                completedCount: todaySnapshot.completedHabits,
+                                remainingCount: todaySnapshot.remainingHabits
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                        }
+
+                        if visibleHabits.isEmpty {
+                            Section {
+                                ContentUnavailableView(
+                                    "No Habits for This Date",
+                                    systemImage: "calendar.badge.exclamationmark",
+                                    description: Text("Habits will appear on or after their start date.")
+                                )
+                                .frame(maxWidth: .infinity)
+                            }
+                        } else {
+                            Section {
+                                ForEach(visibleHabits) { habit in
+                                    NavigationLink {
+                                        HabitDetailView(habit: habit, viewModel: viewModel, initialSelectedDate: selectedDate)
+                                    } label: {
+                                        HabitRowView(
+                                            habit: habit,
+                                            selectedDate: selectedDate,
+                                            isActionEnabled: !isFutureSelection || habit.recurrenceType == .none
+                                        ) {
+                                            if isFutureSelection {
+                                                guard habit.recurrenceType == .none else { return }
+                                                viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: !habit.isPlanned(on: selectedDate), in: modelContext)
+                                            } else {
+                                                viewModel.setCompletion(for: habit, on: selectedDate, isCompleted: !habit.isCompleted(on: selectedDate), in: modelContext)
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) { viewModel.requestDeleteHabit(habit) } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+
+                                        Button { viewModel.openEditHabitSheet(for: habit) } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        .tint(.blue)
+                                    }
+                                }
+                            }
+                        }
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemGroupedBackground))
                 }
-                .onDelete(perform: deleteItems)
             }
+            .navigationTitle("Habit Tracker")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { handleAddHabitTap() } label: {
+                        Label("Add Habit", systemImage: "plus")
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .sheet(isPresented: $viewModel.isShowingAddSheet) {
+            AddHabitView(
+                title: "Add Habit",
+                saveButtonTitle: "Save",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: $viewModel.selectedStartOption,
+                startDate: $viewModel.draftStartDate,
+                recurrenceType: $viewModel.draftRecurrenceType,
+                customWeekdays: $viewModel.draftCustomWeekdays,
+                reminderEnabled: $viewModel.draftReminderEnabled,
+                reminderTime: $viewModel.draftReminderTime,
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: isFutureSelection,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onReminderToggle: { enabled in
+                    guard enabled else { return }
+                    Task {
+                        _ = await reminderManager.requestPermissionIfNeeded()
+                    }
+                },
+                onSave: { handleSaveNewHabit() },
+                onCancel: { viewModel.closeAddHabitSheet() }
+            )
+            .presentationDetents([.large])
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        .sheet(isPresented: $viewModel.isShowingEditSheet) {
+            AddHabitView(
+                title: "Edit Habit",
+                saveButtonTitle: "Update",
+                habitTitle: $viewModel.draftHabitTitle,
+                selectedStartOption: .constant(.startToday),
+                startDate: $viewModel.draftStartDate,
+                recurrenceType: $viewModel.draftRecurrenceType,
+                customWeekdays: $viewModel.draftCustomWeekdays,
+                reminderEnabled: $viewModel.draftReminderEnabled,
+                reminderTime: $viewModel.draftReminderTime,
+                selectedDateLabel: selectedDate.formatted(.dateTime.weekday(.wide).month().day()),
+                isPlanOptionVisible: false,
+                isSaveEnabled: viewModel.isDraftTitleValid,
+                onReminderToggle: { enabled in
+                    guard enabled else { return }
+                    Task {
+                        _ = await reminderManager.requestPermissionIfNeeded()
+                    }
+                },
+                onSave: { viewModel.saveEditedHabit(in: modelContext) },
+                onCancel: { viewModel.closeEditHabitSheet() }
+            )
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $isShowingPaywall) {
+            PaywallView(
+                displayPrice: premiumDisplayPrice,
+                isProcessing: purchaseManager.isProcessingPurchase,
+                onPurchase: {
+                    Task {
+                        await purchaseManager.purchasePremium()
+                        if purchaseManager.isPremiumUnlocked {
+                            isShowingPaywall = false
+                        }
+                    }
+                },
+                onRestore: {
+                    Task {
+                        await purchaseManager.restorePurchases()
+                        if purchaseManager.isPremiumUnlocked {
+                            isShowingPaywall = false
+                        }
+                    }
+                }
+            )
+            .presentationDetents([.medium])
+        }
+        .confirmationDialog(
+            "Delete habit?",
+            isPresented: Binding(
+                get: { viewModel.habitPendingDelete != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        viewModel.cancelDeleteHabitRequest()
+                    }
+                }
+            ),
+            presenting: viewModel.habitPendingDelete
+        ) { _ in
+            Button("Delete Habit", role: .destructive) {
+                viewModel.confirmDeleteHabit(in: modelContext)
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelDeleteHabitRequest()
+            }
+        } message: { _ in
+            Text("This action cannot be undone.")
+        }
+        .task {
+            await purchaseManager.prepare()
+        }
+        .onAppear {
+            viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext)
+            persistSharedSnapshot()
+            Task {
+                await reminderManager.scheduleRollingReminders(for: habits)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .habitDataDidChange)) { _ in
+            persistSharedSnapshot()
+            Task {
+                await reminderManager.scheduleRollingReminders(for: habits)
+            }
+        }
+        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .alert("Reminder Permission", isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
+            Button("OK", role: .cancel) { reminderManager.clearMessage() }
+        } message: {
+            Text(reminderManager.permissionDeniedMessage ?? "")
+        }
+        .alert("Purchase", isPresented: Binding(get: { purchaseManager.errorMessage != nil }, set: { if !$0 { purchaseManager.clearError() } })) {
+            Button("OK", role: .cancel) { purchaseManager.clearError() }
+        } message: {
+            Text(purchaseManager.errorMessage ?? "")
+        }
+    }
+
+    private func persistSharedSnapshot() {
+        SharedHabitSnapshotBuilder.save(todaySnapshot)
+#if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+#endif
+    }
+
+    private func handleAddHabitTap() {
+        if canCreateHabit() {
+            viewModel.openAddHabitSheet(for: selectedDate)
+        } else {
+            isShowingPaywall = true
+        }
+    }
+
+    private func handleSaveNewHabit() {
+        if canCreateHabit() {
+            viewModel.saveNewHabit(in: modelContext)
+        } else {
+            viewModel.closeAddHabitSheet()
+            isShowingPaywall = true
+        }
+    }
+
+    private func canCreateHabit() -> Bool {
+        purchaseManager.isPremiumUnlocked || habits.count < freeHabitLimit
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Habit.self, inMemory: true)
 }
