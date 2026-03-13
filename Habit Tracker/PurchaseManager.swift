@@ -1,6 +1,9 @@
 import Foundation
 import Combine
 import StoreKit
+#if DEBUG && canImport(StoreKitTest)
+import StoreKitTest
+#endif
 
 @MainActor
 final class PurchaseManager: ObservableObject {
@@ -17,6 +20,9 @@ final class PurchaseManager: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let premiumKey = "habittracker.premium.unlocked"
     private var updatesTask: Task<Void, Never>?
+#if DEBUG && canImport(StoreKitTest)
+    private var storeKitTestSession: SKTestSession?
+#endif
 
     var isProductReady: Bool {
         premiumProduct != nil
@@ -28,6 +34,9 @@ final class PurchaseManager: ObservableObject {
 
     init() {
         isPremiumUnlocked = userDefaults.bool(forKey: premiumKey)
+#if DEBUG && canImport(StoreKitTest)
+        configureStoreKitTestSessionIfAvailable()
+#endif
         updatesTask = observeTransactionUpdates()
     }
 
@@ -131,6 +140,21 @@ final class PurchaseManager: ObservableObject {
     func clearProductLoadMessage() {
         productLoadMessage = nil
     }
+
+#if DEBUG && canImport(StoreKitTest)
+    private func configureStoreKitTestSessionIfAvailable() {
+        do {
+            let session = try SKTestSession(configurationFileNamed: "StoreKit")
+            session.disableDialogs = false
+            session.askToBuyEnabled = false
+            try session.resetToDefaultState()
+            storeKitTestSession = session
+            print("[StoreKit] DEBUG test session initialized from StoreKit.storekit")
+        } catch {
+            print("[StoreKit] DEBUG test session initialization failed: \(error)")
+        }
+    }
+#endif
 
     private func observeTransactionUpdates() -> Task<Void, Never> {
         Task {
