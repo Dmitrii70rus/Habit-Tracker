@@ -144,7 +144,7 @@ final class PurchaseManager: ObservableObject {
 #if DEBUG && canImport(StoreKitTest)
     private func configureStoreKitTestSessionIfAvailable() {
         do {
-            let session = try SKTestSession(configurationFileNamed: "StoreKit")
+            let session = try SKTestSession(configurationFileNamed: "StoreKit.storekit")
             session.disableDialogs = false
             session.askToBuyEnabled = false
             try session.resetToDefaultState()

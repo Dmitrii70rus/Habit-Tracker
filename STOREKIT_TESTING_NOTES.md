@@ -2,6 +2,7 @@
 
 ## Product
 - **Product ID:** `habittracker.premium.unlock`
+- **Fallback Product ID (compatibility):** `habittracker.premium`
 - **Type:** Non-consumable (lifetime unlock)
 
 ## Xcode testing setup
