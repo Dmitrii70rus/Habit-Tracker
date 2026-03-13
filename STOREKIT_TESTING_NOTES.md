@@ -8,6 +8,7 @@
 1. Open shared scheme **Habit Tracker**.
 2. Verify `StoreKit.storekit` is attached to the Run action.
 3. Run the app on Simulator and open the premium paywall.
+4. If products are still unavailable, re-select the shared scheme and restart the run session.
 
 > The repo includes `Habit Tracker/StoreKit.storekit` and a shared scheme that references it.
 

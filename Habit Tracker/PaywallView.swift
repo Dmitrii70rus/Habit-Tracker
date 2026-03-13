@@ -65,20 +65,41 @@ struct PaywallView: View {
                         .buttonStyle(.bordered)
                 }
 
-                Button(action: onPurchase) {
-                    HStack {
-                        Spacer()
-                        if isLoadingProduct {
+                if isLoadingProduct {
+                    Button(action: {}) {
+                        HStack {
+                            Spacer()
                             ProgressView()
+                            Text("Loading purchase options…")
+                                .fontWeight(.semibold)
+                            Spacer()
                         }
-                        Text(isPurchaseAvailable ? "Unlock Premium (\(displayPrice))" : "Premium Unavailable")
-                            .fontWeight(.semibold)
-                        Spacer()
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(true)
+                } else if isPurchaseAvailable {
+                    Button(action: onPurchase) {
+                        HStack {
+                            Spacer()
+                            Text("Unlock Premium (\(displayPrice))")
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isProcessing)
+                } else {
+                    Button(action: {}) {
+                        HStack {
+                            Spacer()
+                            Text("Premium Unavailable")
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(true)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(12)
-                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 Button("Try Again", action: onRetryLoad)
                     .buttonStyle(.bordered)
