@@ -6,9 +6,13 @@ struct ContentView: View {
     @Query(sort: [SortDescriptor(\Habit.createdAt, order: .forward)]) private var habits: [Habit]
     @StateObject private var viewModel = HabitListViewModel()
     @StateObject private var reminderManager = ReminderManager()
+    @StateObject private var purchaseManager = PurchaseManager()
+
     @State private var selectedDate = Calendar.current.startOfDay(for: .now)
+    @State private var isShowingPaywall = false
 
     private let calendar = Calendar.current
+    private let freeHabitLimit = 3
 
     private var dateRange: [Date] {
         (-7...7).compactMap { calendar.date(byAdding: .day, value: $0, to: .now) }
@@ -68,11 +72,15 @@ struct ContentView: View {
         return selectedDate.formatted(.dateTime.weekday(.wide).month().day())
     }
 
+    private var premiumDisplayPrice: String {
+        purchaseManager.premiumProduct?.displayPrice ?? "$4.99"
+    }
+
     var body: some View {
         NavigationStack {
             Group {
                 if habits.isEmpty {
-                    EmptyHabitStateView { viewModel.openAddHabitSheet(for: selectedDate) }
+                    EmptyHabitStateView { handleAddHabitTap() }
                 } else {
                     List {
                         Section {
@@ -95,7 +103,6 @@ struct ContentView: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
                         }
-
 
                         Section {
                             WeeklySummaryCardView(
@@ -168,7 +175,7 @@ struct ContentView: View {
             .navigationTitle("Habit Tracker")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { viewModel.openAddHabitSheet(for: selectedDate) } label: {
+                    Button { handleAddHabitTap() } label: {
                         Label("Add Habit", systemImage: "plus")
                     }
                 }
@@ -194,7 +201,7 @@ struct ContentView: View {
                         _ = await reminderManager.requestPermissionIfNeeded()
                     }
                 },
-                onSave: { viewModel.saveNewHabit(in: modelContext) },
+                onSave: { handleSaveNewHabit() },
                 onCancel: { viewModel.closeAddHabitSheet() }
             )
             .presentationDetents([.large])
@@ -224,6 +231,29 @@ struct ContentView: View {
             )
             .presentationDetents([.large])
         }
+        .sheet(isPresented: $isShowingPaywall) {
+            PaywallView(
+                displayPrice: premiumDisplayPrice,
+                isProcessing: purchaseManager.isProcessingPurchase,
+                onPurchase: {
+                    Task {
+                        await purchaseManager.purchasePremium()
+                        if purchaseManager.isPremiumUnlocked {
+                            isShowingPaywall = false
+                        }
+                    }
+                },
+                onRestore: {
+                    Task {
+                        await purchaseManager.restorePurchases()
+                        if purchaseManager.isPremiumUnlocked {
+                            isShowingPaywall = false
+                        }
+                    }
+                }
+            )
+            .presentationDetents([.medium])
+        }
         .confirmationDialog(
             "Delete habit?",
             isPresented: Binding(
@@ -244,6 +274,9 @@ struct ContentView: View {
             }
         } message: { _ in
             Text("This action cannot be undone.")
+        }
+        .task {
+            await purchaseManager.prepare()
         }
         .onAppear {
             viewModel.refreshStreaksIfNeeded(for: habits, in: modelContext)
@@ -266,6 +299,42 @@ struct ContentView: View {
         } message: {
             Text(reminderManager.permissionDeniedMessage ?? "")
         }
+        .alert("Purchase", isPresented: Binding(get: { purchaseManager.errorMessage != nil }, set: { if !$0 { purchaseManager.clearError() } })) {
+            Button("OK", role: .cancel) { purchaseManager.clearError() }
+        } message: {
+            Text(purchaseManager.errorMessage ?? "")
+        }
+    }
+
+    private func handleAddHabitTap() {
+        if canCreateHabit() {
+            viewModel.openAddHabitSheet(for: selectedDate)
+        } else {
+            isShowingPaywall = true
+        }
+    }
+
+    private func handleSaveNewHabit() {
+        if canCreateHabit() {
+            viewModel.saveNewHabit(in: modelContext)
+        } else {
+            viewModel.closeAddHabitSheet()
+            isShowingPaywall = true
+        }
+        .alert("Something went wrong", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .alert("Reminder Permission", isPresented: Binding(get: { reminderManager.permissionDeniedMessage != nil }, set: { if !$0 { reminderManager.clearMessage() } })) {
+            Button("OK", role: .cancel) { reminderManager.clearMessage() }
+        } message: {
+            Text(reminderManager.permissionDeniedMessage ?? "")
+        }
+    }
+
+    private func canCreateHabit() -> Bool {
+        purchaseManager.isPremiumUnlocked || habits.count < freeHabitLimit
     }
 }
 
