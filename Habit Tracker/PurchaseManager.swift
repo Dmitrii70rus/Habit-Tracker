@@ -65,13 +65,13 @@ final class PurchaseManager: ObservableObject {
             premiumProduct = products.first { $0.id == Self.primaryProductID } ?? products.first
 
             if premiumProduct == nil {
-                productLoadMessage = "Premium temporarily unavailable."
+                productLoadMessage = L10n.purchaseProductUnavailable
 #if DEBUG
                 print("[StoreKit] No products returned for IDs: \(supportedProductIDs.joined(separator: ", "))")
 #endif
             }
         } catch {
-            productLoadMessage = "Premium temporarily unavailable."
+            productLoadMessage = L10n.purchaseProductUnavailable
 #if DEBUG
             print("[StoreKit] Product load failed for IDs: \(supportedProductIDs.joined(separator: ", ")). Error: \(error)")
 #endif
@@ -84,7 +84,7 @@ final class PurchaseManager: ObservableObject {
         }
 
         guard let product = premiumProduct else {
-            errorMessage = "Premium product is not available right now. Please try again later."
+            errorMessage = L10n.purchaseUnavailable
             return
         }
 
@@ -101,17 +101,17 @@ final class PurchaseManager: ObservableObject {
                     await unlockPremium()
                     await transaction.finish()
                 case .unverified:
-                    errorMessage = "We couldn't verify this purchase."
+                    errorMessage = L10n.purchaseVerifyFailed
                 }
             case .userCancelled:
                 break
             case .pending:
-                errorMessage = "Purchase is pending approval."
+                errorMessage = L10n.purchasePending
             @unknown default:
-                errorMessage = "Purchase failed. Please try again."
+                errorMessage = L10n.purchaseFailed
             }
         } catch {
-            errorMessage = "Purchase failed. Please check your connection and try again."
+            errorMessage = L10n.purchaseFailedConnection
         }
     }
 
@@ -124,12 +124,12 @@ final class PurchaseManager: ObservableObject {
             await refreshPurchasedState()
 
             if isPremiumUnlocked {
-                errorMessage = "Purchases restored successfully."
+                errorMessage = L10n.purchaseRestoreSuccess
             } else {
-                errorMessage = "No previous purchase was found for this Apple ID."
+                errorMessage = L10n.purchaseRestoreNone
             }
         } catch {
-            errorMessage = "Couldn't restore purchases right now."
+            errorMessage = L10n.purchaseRestoreFailed
         }
     }
 

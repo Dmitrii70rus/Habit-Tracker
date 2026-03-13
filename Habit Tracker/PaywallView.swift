@@ -20,21 +20,21 @@ struct PaywallView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Text("Premium")
+                Text(L10n.paywallTitle)
                     .font(.title.bold())
                     .multilineTextAlignment(.center)
 
-                Text("The free version supports up to 3 habits. Upgrade to track as many habits as you want.")
+                Text(L10n.paywallSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: 12) {
-                    featureRow("Unlimited habits")
-                    featureRow("Smart reminders")
-                    featureRow("Habit statistics")
-                    featureRow("All future premium updates")
+                    featureRow(L10n.paywallBenefitUnlimited)
+                    featureRow(L10n.paywallBenefitReminders)
+                    featureRow(L10n.paywallBenefitStats)
+                    featureRow(L10n.paywallBenefitUpdates)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
@@ -43,16 +43,16 @@ struct PaywallView: View {
                 if isLoadingProduct {
                     HStack(spacing: 8) {
                         ProgressView()
-                        Text("Loading premium options…")
+                        Text(L10n.paywallLoadingOptions)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 } else if hasProductIssue {
                     VStack(spacing: 6) {
-                        Text("Premium temporarily unavailable.")
+                        Text(L10n.paywallUnavailableTitle)
                             .font(.footnote.weight(.semibold))
                             .multilineTextAlignment(.center)
-                        Text("Check StoreKit test configuration in local testing.")
+                        Text(L10n.paywallUnavailableMessage)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -61,7 +61,7 @@ struct PaywallView: View {
                     .padding(12)
                     .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                    Button("Try Again", action: onRetryLoad)
+                    Button(L10n.paywallTryAgain, action: onRetryLoad)
                         .buttonStyle(.bordered)
                 }
 
@@ -70,7 +70,7 @@ struct PaywallView: View {
                         HStack {
                             Spacer()
                             ProgressView()
-                            Text("Loading purchase options…")
+                            Text(L10n.paywallLoadingPurchase)
                                 .fontWeight(.semibold)
                             Spacer()
                         }
@@ -81,7 +81,7 @@ struct PaywallView: View {
                     Button(action: onPurchase) {
                         HStack {
                             Spacer()
-                            Text("Unlock Premium (\(displayPrice))")
+                            Text(L10n.paywallUnlockCta(displayPrice))
                                 .fontWeight(.semibold)
                             Spacer()
                         }
@@ -92,7 +92,7 @@ struct PaywallView: View {
                     Button(action: {}) {
                         HStack {
                             Spacer()
-                            Text("Premium Unavailable")
+                            Text(L10n.paywallUnavailableCta)
                                 .fontWeight(.semibold)
                             Spacer()
                         }
@@ -101,11 +101,11 @@ struct PaywallView: View {
                     .disabled(true)
                 }
 
-                Button("Try Again", action: onRetryLoad)
+                Button(L10n.paywallRestore, action: onRestore)
                     .buttonStyle(.bordered)
                     .disabled(isProcessing)
 
-                Button("Close") {
+                Button(L10n.paywallClose) {
                     dismiss()
                 }
                 .buttonStyle(.plain)
