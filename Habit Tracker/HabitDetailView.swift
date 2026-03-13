@@ -36,19 +36,19 @@ struct HabitDetailView: View {
     private var recurrenceDescription: String {
         switch habit.recurrenceType {
         case .none:
-            return "One-time"
+            return L10n.recurrenceOneTime
         case .daily:
-            return "Every day"
+            return L10n.recurrenceEveryDay
         case .weekdays:
-            return "Weekdays"
+            return L10n.recurrenceWeekdays
         case .weekends:
-            return "Weekends"
+            return L10n.recurrenceWeekends
         case .custom:
             let symbols = calendar.shortWeekdaySymbols
             let labels = habit.normalizedSelectedWeekdays.compactMap { weekday in
                 symbols[safe: weekday - 1]
             }
-            return labels.isEmpty ? "Custom weekdays" : labels.joined(separator: " ")
+            return labels.isEmpty ? L10n.recurrenceCustomWeekdays : labels.joined(separator: " ")
         }
     }
 
@@ -66,23 +66,23 @@ struct HabitDetailView: View {
                     Text(habit.title)
                         .font(.title2.weight(.semibold))
 
-                    HStack(spacing: 18) {
-                        Label("Current streak: \(dayText(habit.currentStreak))", systemImage: "flame")
-                        Label("Best streak: \(dayText(habit.bestStreak))", systemImage: "trophy")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(L10n.streakCurrent(habit.currentStreak), systemImage: "flame")
+                        Label(L10n.streakBest(habit.bestStreak), systemImage: "trophy")
                     }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                    Text("Starts: \(habit.effectiveStartDate().formatted(.dateTime.weekday(.wide).month().day()))")
+                    Text(L10n.detailStartsOn(habit.effectiveStartDate().formatted(.dateTime.weekday(.wide).month().day())))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Text("Repeats: \(recurrenceDescription)")
+                    Text(L10n.detailRepeats(recurrenceDescription))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     if habit.isReminderEnabled, let reminderTime = habit.reminderTime {
-                        Text("Reminder: \(reminderTime.formatted(date: .omitted, time: .shortened))")
+                        Text(L10n.detailReminder(reminderTime.formatted(date: .omitted, time: .shortened)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -98,9 +98,9 @@ struct HabitDetailView: View {
                 )
                 .padding(.vertical, 4)
             } header: {
-                Text("Choose Date")
+                Text(L10n.detailChooseDate)
             } footer: {
-                Text("Review the last 7 days, today, and the next 7 days.")
+                Text(L10n.detailChooseDateHint)
             }
 
             Section {
@@ -111,7 +111,7 @@ struct HabitDetailView: View {
                 )
 
                 if isNotActiveSelection {
-                    Text("This habit starts on \(habit.effectiveStartDate().formatted(.dateTime.month().day())).")
+                    Text(L10n.detailHabitStartsOn(habit.effectiveStartDate().formatted(.dateTime.month().day())))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else if isFutureSelection {
@@ -120,11 +120,11 @@ struct HabitDetailView: View {
                             let newState = !habit.isPlanned(on: selectedDate)
                             viewModel.setPlanned(for: habit, on: selectedDate, isPlanned: newState, in: modelContext)
                         } label: {
-                            Label(habit.isPlanned(on: selectedDate) ? "Remove Plan" : "Mark as Planned", systemImage: habit.isPlanned(on: selectedDate) ? "calendar.badge.minus" : "calendar.badge.plus")
+                            Label(habit.isPlanned(on: selectedDate) ? L10n.actionRemovePlan : L10n.actionMarkPlanned, systemImage: habit.isPlanned(on: selectedDate) ? "calendar.badge.minus" : "calendar.badge.plus")
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
-                        Text("Planned automatically from recurrence.")
+                        Text(L10n.detailPlannedFromRecurrence)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -133,21 +133,21 @@ struct HabitDetailView: View {
                         let newState = !habit.isCompleted(on: selectedDate)
                         viewModel.setCompletion(for: habit, on: selectedDate, isCompleted: newState, in: modelContext)
                     } label: {
-                        Label(habit.isCompleted(on: selectedDate) ? "Unmark Complete" : "Mark as Complete", systemImage: habit.isCompleted(on: selectedDate) ? "checkmark.circle" : "checkmark.circle.fill")
+                        Label(habit.isCompleted(on: selectedDate) ? L10n.actionUnmarkComplete : L10n.actionMarkComplete, systemImage: habit.isCompleted(on: selectedDate) ? "checkmark.circle" : "checkmark.circle.fill")
                     }
                     .buttonStyle(.borderedProminent)
                 }
             } header: {
-                Text("Selected Day")
+                Text(L10n.detailSelectedDay)
             } footer: {
                 if isNotActiveSelection {
-                    Text("Actions are disabled before the habit start date.")
+                    Text(L10n.detailActionsDisabledBeforeStart)
                 } else {
-                    Text(isFutureSelection ? "Future planned state comes from the recurrence rule." : "Past and current dates can be marked complete or not complete.")
+                    Text(isFutureSelection ? L10n.detailFutureRuleMessage : L10n.detailPastRuleMessage)
                 }
             }
 
-            Section("Statistics") {
+            Section(L10n.detailStats) {
                 HabitStatisticsView(analytics: analytics)
 
                 Text(analytics.motivationalMessage)
@@ -158,17 +158,17 @@ struct HabitDetailView: View {
             Section {
                 WeeklyProgressView(dates: analytics.weeklyDates, states: analytics.weeklyStates)
             } header: {
-                Text("Weekly Progress")
+                Text(L10n.detailWeeklyProgress)
             } footer: {
-                Text("✓ completed • ✗ missed • — not scheduled")
+                Text(L10n.detailWeeklyLegend)
             }
 
             Section {
                 HabitHeatmapView(states: analytics.heatmapStates)
             } header: {
-                Text("Last 9 Weeks")
+                Text(L10n.detailHeatmapTitle)
             } footer: {
-                Text("Gray: not scheduled • Blue: planned/not completed • Green: completed")
+                Text(L10n.detailHeatmapLegend)
             }
 
             if habit.completionDates.isEmpty && !habit.hasAnyPlannedDates {
@@ -177,9 +177,9 @@ struct HabitDetailView: View {
                         Image(systemName: "clock.badge.questionmark")
                             .font(.title3)
                             .foregroundStyle(.secondary)
-                        Text("No history yet")
+                        Text(L10n.emptyNoHistory)
                             .font(.headline)
-                        Text("Complete this habit to start building a streak.")
+                        Text(L10n.emptyNoHistoryMessage)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -189,11 +189,11 @@ struct HabitDetailView: View {
                 }
             }
         }
-        .navigationTitle("Habit Details")
+        .navigationTitle(L10n.detailTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Edit") {
+                Button(L10n.editHabit) {
                     viewModel.openEditHabitSheet(for: habit)
                 }
 
@@ -206,8 +206,8 @@ struct HabitDetailView: View {
         }
         .sheet(isPresented: $viewModel.isShowingEditSheet) {
             AddHabitView(
-                title: "Edit Habit",
-                saveButtonTitle: "Update",
+                title: L10n.editHabitTitle,
+                saveButtonTitle: L10n.editHabitSave,
                 habitTitle: $viewModel.draftHabitTitle,
                 selectedStartOption: .constant(.startToday),
                 startDate: $viewModel.draftStartDate,
@@ -225,7 +225,7 @@ struct HabitDetailView: View {
             .presentationDetents([.large])
         }
         .confirmationDialog(
-            "Delete habit?",
+            L10n.alertDeleteHabitTitle,
             isPresented: Binding(
                 get: { viewModel.habitPendingDelete?.id == habit.id },
                 set: { presented in
@@ -235,20 +235,20 @@ struct HabitDetailView: View {
                 }
             )
         ) {
-            Button("Delete Habit", role: .destructive) {
+            Button(L10n.alertDeleteHabitButton, role: .destructive) {
                 viewModel.confirmDeleteHabit(in: modelContext)
                 dismiss()
             }
-            Button("Cancel", role: .cancel) {
+            Button(L10n.cancel, role: .cancel) {
                 viewModel.cancelDeleteHabitRequest()
             }
         } message: {
-            Text("This action cannot be undone.")
+            Text(L10n.alertDeleteHabitMessage)
         }
     }
 
     private func dayText(_ count: Int) -> String {
-        count == 1 ? "1 day" : "\(count) days"
+        L10n.dayCount(count)
     }
 }
 
@@ -374,21 +374,21 @@ private struct HabitDayStatusCard: View {
 
     private var title: String {
         switch status {
-        case .notActive: return "Not active yet"
-        case .completed: return "Completed"
-        case .planned: return "Planned"
-        case .missed: return "Not completed"
-        case .none: return "No plan"
+        case .notActive: return L10n.statusNotActiveYet
+        case .completed: return L10n.statusCompleted
+        case .planned: return L10n.statusPlanned
+        case .missed: return L10n.statusNotCompleted
+        case .none: return L10n.statusNoPlan
         }
     }
 
     private var subtitle: String {
         switch status {
-        case .notActive: return "This habit starts on \(habitStartDate.formatted(.dateTime.month().day()))."
-        case .completed: return "Great job — this day counts toward your streak."
-        case .planned: return "Planned day from recurrence."
-        case .missed: return "You can still review and update this day."
-        case .none: return "No status set for this day yet."
+        case .notActive: return L10n.detailStatusStartsOn(habitStartDate.formatted(.dateTime.month().day()))
+        case .completed: return L10n.detailStatusCompletedSubtitle
+        case .planned: return L10n.detailStatusPlannedSubtitle
+        case .missed: return L10n.detailStatusMissedSubtitle
+        case .none: return L10n.detailStatusNoneSubtitle
         }
     }
 
@@ -449,11 +449,11 @@ private struct HabitStatisticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            StatisticRow(label: "Current streak", value: "\(analytics.currentStreak) days")
-            StatisticRow(label: "Best streak", value: "\(analytics.bestStreak) days")
-            StatisticRow(label: "Completion rate", value: completionPercentText)
-            StatisticRow(label: "Total completions", value: "\(analytics.totalCompletions)")
-            StatisticRow(label: "Scheduled days", value: "\(analytics.scheduledDays)")
+            StatisticRow(label: L10n.statCurrentStreak, value: L10n.statDays(analytics.currentStreak))
+            StatisticRow(label: L10n.statBestStreak, value: L10n.statDays(analytics.bestStreak))
+            StatisticRow(label: L10n.statCompletionRate, value: completionPercentText)
+            StatisticRow(label: L10n.statTotalCompletions, value: "\(analytics.totalCompletions)")
+            StatisticRow(label: L10n.statScheduledDays, value: "\(analytics.scheduledDays)")
         }
     }
 }

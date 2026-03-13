@@ -13,15 +13,15 @@ enum HabitRecurrence: String, Codable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .none:
-            return "One-time"
+            return L10n.recurrenceOneTime
         case .daily:
-            return "Every day"
+            return L10n.recurrenceEveryDay
         case .weekdays:
-            return "Weekdays"
+            return L10n.recurrenceWeekdays
         case .weekends:
-            return "Weekends"
+            return L10n.recurrenceWeekends
         case .custom:
-            return "Custom weekdays"
+            return L10n.recurrenceCustomWeekdays
         }
     }
 }

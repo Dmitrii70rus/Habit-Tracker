@@ -65,7 +65,7 @@ final class HabitListViewModel: ObservableObject {
         let trimmedTitle = draftHabitTitle.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmedTitle.isEmpty else {
-            errorMessage = "Habit name can't be empty."
+            errorMessage = L10n.formHabitNameEmpty
             return
         }
 
@@ -87,7 +87,7 @@ final class HabitListViewModel: ObservableObject {
 
         context.insert(habit)
 
-        persistChanges(in: context, errorText: "Couldn't save your habit. Please try again.") {
+        persistChanges(in: context, errorText: L10n.errorSaveHabit) {
             self.closeAddHabitSheet()
         }
     }
@@ -99,7 +99,7 @@ final class HabitListViewModel: ObservableObject {
 
         let trimmedTitle = draftHabitTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else {
-            errorMessage = "Habit name can't be empty."
+            errorMessage = L10n.formHabitNameEmpty
             return
         }
 
@@ -111,7 +111,7 @@ final class HabitListViewModel: ObservableObject {
         editingHabit.selectedWeekdays = recurrence == .custom ? Array(draftCustomWeekdays).sorted() : []
         editingHabit.reminderEnabled = draftReminderEnabled
         editingHabit.reminderTime = draftReminderEnabled ? draftReminderTime : nil
-        persistChanges(in: context, errorText: "Couldn't save your changes. Please try again.") {
+        persistChanges(in: context, errorText: L10n.errorSaveChanges) {
             self.closeEditHabitSheet()
         }
     }
@@ -130,7 +130,7 @@ final class HabitListViewModel: ObservableObject {
         }
 
         if needsSave {
-            persistChanges(in: context, errorText: "Couldn't refresh streaks. Please try again.")
+            persistChanges(in: context, errorText: L10n.errorRefreshStreaks)
         }
     }
 
@@ -141,19 +141,19 @@ final class HabitListViewModel: ObservableObject {
             return
         }
 
-        persistChanges(in: context, errorText: "Couldn't update completion. Please try again.")
+        persistChanges(in: context, errorText: L10n.errorUpdateCompletion)
     }
 
     func setCompletion(for habit: Habit, on day: Date, isCompleted: Bool, in context: ModelContext) {
         let changed = habit.setCompletion(on: day, isCompleted: isCompleted)
         guard changed else { return }
-        persistChanges(in: context, errorText: "Couldn't update history. Please try again.")
+        persistChanges(in: context, errorText: L10n.errorUpdateHistory)
     }
 
     func setPlanned(for habit: Habit, on day: Date, isPlanned: Bool, in context: ModelContext) {
         let changed = habit.setPlanned(on: day, isPlanned: isPlanned)
         guard changed else { return }
-        persistChanges(in: context, errorText: "Couldn't update plan. Please try again.")
+        persistChanges(in: context, errorText: L10n.errorUpdatePlan)
     }
 
     func requestDeleteHabit(_ habit: Habit) {
@@ -172,7 +172,7 @@ final class HabitListViewModel: ObservableObject {
             self.habitPendingDelete = nil
         }
 
-        persistChanges(in: context, errorText: "Couldn't delete habit. Please try again.")
+        persistChanges(in: context, errorText: L10n.errorDeleteHabit)
     }
 
     func cancelDeleteHabitRequest() {

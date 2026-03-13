@@ -58,18 +58,18 @@ struct ContentView: View {
 
     private var weeklyMotivationText: String {
         if thisWeekSummary.scheduled == 0 {
-            return "No scheduled habits this week yet."
+            return L10n.analyticsWeekNone
         }
 
         if weeklyCompletionRatio >= 0.8 {
-            return "Great job — keep the streak alive!"
+            return L10n.analyticsGreat
         }
 
         if weeklyCompletionRatio >= 0.5 {
-            return "You're building consistency."
+            return L10n.analyticsConsistent
         }
 
-        return "Almost there — one more habit today!"
+        return L10n.analyticsAlmost
     }
 
 
@@ -78,9 +78,9 @@ struct ContentView: View {
     }
 
     private var selectedDateTitle: String {
-        if calendar.isDateInToday(selectedDate) { return "Today" }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return "Yesterday" }
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now), calendar.isDate(selectedDate, inSameDayAs: tomorrow) { return "Tomorrow" }
+        if calendar.isDateInToday(selectedDate) { return L10n.today }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: .now), calendar.isDate(selectedDate, inSameDayAs: yesterday) { return L10n.yesterday }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: .now), calendar.isDate(selectedDate, inSameDayAs: tomorrow) { return L10n.tomorrow }
         return selectedDate.formatted(.dateTime.weekday(.wide).month().day())
     }
 

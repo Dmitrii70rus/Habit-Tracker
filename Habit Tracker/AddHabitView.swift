@@ -9,8 +9,8 @@ struct AddHabitView: View {
 
         var title: String {
             switch self {
-            case .startToday: return "Start Today"
-            case .planForSelectedDate: return "Plan for Selected Date"
+            case .startToday: return L10n.startOptionToday
+            case .planForSelectedDate: return L10n.startOptionSelectedDate
             }
         }
     }
@@ -40,31 +40,31 @@ struct AddHabitView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Habit") {
-                    TextField("e.g. Drink Water", text: $habitTitle)
+                Section(L10n.formHabitSection) {
+                    TextField(L10n.formHabitPlaceholder, text: $habitTitle)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
 
-                    DatePicker("Start date", selection: $startDate, displayedComponents: .date)
+                    DatePicker(L10n.formStartDate, selection: $startDate, displayedComponents: .date)
                 }
 
                 if isPlanOptionVisible {
-                    Section("Quick Start") {
-                        Picker("Start", selection: $selectedStartOption) {
+                    Section(L10n.formQuickStart) {
+                        Picker(L10n.formStart, selection: $selectedStartOption) {
                             ForEach(visibleOptions) { option in
                                 Text(option.title).tag(option)
                             }
                         }
                         .pickerStyle(.segmented)
 
-                        Text("Selected date: \(selectedDateLabel)")
+                        Text(L10n.selectedDateLabel(selectedDateLabel))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                Section("Recurrence") {
-                    Picker("Repeats", selection: $recurrenceType) {
+                Section(L10n.formRecurrenceSection) {
+                    Picker(L10n.formRepeats, selection: $recurrenceType) {
                         ForEach(HabitRecurrence.allCases) { recurrence in
                             Text(recurrence.title).tag(recurrence)
                         }
@@ -75,11 +75,11 @@ struct AddHabitView: View {
                     }
                 }
 
-                Section("Reminders") {
-                    Toggle("Enable reminder", isOn: reminderToggleBinding)
+                Section(L10n.formRemindersSection) {
+                    Toggle(L10n.formEnableReminder, isOn: reminderToggleBinding)
 
                     if reminderEnabled {
-                        DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                        DatePicker(L10n.formReminderTime, selection: $reminderTime, displayedComponents: .hourAndMinute)
                     }
                 }
             }
@@ -87,7 +87,7 @@ struct AddHabitView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: onCancel)
+                    Button(L10n.cancel, action: onCancel)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -115,7 +115,7 @@ private struct WeekdayPickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Custom days")
+            Text(L10n.formCustomDays)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
