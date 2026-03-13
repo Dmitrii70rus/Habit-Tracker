@@ -5,9 +5,12 @@
 - **Type:** Non-consumable (lifetime unlock)
 
 ## Xcode testing setup
-1. Create or open a StoreKit Configuration file in Xcode.
-2. Add non-consumable product with ID `habittracker.premium.unlock`.
-3. Run the app with that StoreKit configuration attached to the scheme.
+1. Open shared scheme **Habit Tracker**.
+2. Verify `StoreKit.storekit` is attached to the Run action.
+3. Run the app on Simulator and open the premium paywall.
+4. If products are still unavailable, re-select the shared scheme and restart the run session.
+
+> The repo includes `Habit Tracker/StoreKit.storekit` and a shared scheme that references it.
 
 ## Expected behavior
 - Paywall shows a loading state while products are loading.
