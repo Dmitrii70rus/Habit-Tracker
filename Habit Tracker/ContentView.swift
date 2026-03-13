@@ -293,7 +293,7 @@ struct ContentView: View {
                     }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.large])
             .task {
                 await purchaseManager.loadProducts()
             }
